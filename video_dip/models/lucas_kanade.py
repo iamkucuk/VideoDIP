@@ -3,12 +3,12 @@ import numpy as np
 import torch
 from torch import nn
 
-class OpticalFlowLucasKanade(nn.Module):
+class OpticalFlowLucasKanade:
     """
     Optical flow estimation using Lucas-Kanade method from OpenCV.
     """
     def __init__(self):
-        super(OpticalFlowLucasKanade, self).__init__()
+        pass
 
     def _farneback_one_image(self, image1, image2):
         """
@@ -21,6 +21,11 @@ class OpticalFlowLucasKanade(nn.Module):
         Returns:
             np.ndarray: Estimated optical flow.
         """
+        # Permute dimensions if necessary
+        if (len(image1.shape) == 3) and (image1.shape[0] == 3):
+            image1 = np.transpose(image1, (1, 2, 0))
+            image2 = np.transpose(image2, (1, 2, 0))
+
         if (len(image1.shape) == 3) and (image1.shape[2] == 3):
             image1 = cv2.cvtColor(image1, cv2.COLOR_RGB2GRAY)
             image2 = cv2.cvtColor(image2, cv2.COLOR_RGB2GRAY)
@@ -30,7 +35,7 @@ class OpticalFlowLucasKanade(nn.Module):
         # Compute magnite and angle of 2D vector
         mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
 
-        hsv_mask = np.zeros_like(image1)
+        hsv_mask = np.zeros((image1.shape[0], image1.shape[1], 3), dtype=np.uint8)
         hsv_mask[..., 1] = 255
 
         # Set image hue value according to the angle of optical flow
@@ -40,7 +45,7 @@ class OpticalFlowLucasKanade(nn.Module):
         # Convert to rgb
         rgb_representation = cv2.cvtColor(hsv_mask, cv2.COLOR_HSV2BGR)
         # Convert flow to tensor
-        flow_rgb = torch.tensor(rgb_representation).permute(2, 0, 1).unsqueeze(0).float().cuda()
+        flow_rgb = torch.tensor(rgb_representation).permute(2, 0, 1).unsqueeze(0).float()
         return flow_rgb
     
     def forward(self, image1, image2):
@@ -69,5 +74,48 @@ class OpticalFlowLucasKanade(nn.Module):
             return torch.cat(flows)
         else:
             return self._farneback_one_image(image1, image2)
-
         
+    def forward_clip(self, clip):
+        """
+        Estimate the optical flow between frames in a video clip.
+
+        Args:
+            clip (torch.Tensor): Video clip with frames (grayscale).
+
+        Returns:
+            torch.Tensor: Estimated optical flow.
+        """
+        clip = clip.squeeze().cpu().numpy()
+        clip = np.uint8(clip * 255)
+
+        flows = []
+        for i in range(len(clip) - 1):
+            flows.append(self._farneback_one_image(clip[i], clip[i + 1]))
+        return torch.cat(flows)
+        
+    def __call__(self, inp, inp2 = None):
+        if inp2 is not None:
+            return self.forward(inp, inp2)
+        else:
+            return self.forward_clip(inp)
+
+if __name__ == '__main__':
+    import sys
+    import os
+    # Add parent of parent directory to path
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
+
+    from video_dip.data import VideoDIPDataset
+    from torch.utils.data import DataLoader
+
+    dataset = VideoDIPDataset("video_dip/data/sora.mp4")
+    data_loader = DataLoader(dataset, batch_size=2, num_workers=8)
+
+    lucas_kanade = OpticalFlowLucasKanade()
+    batch = next(iter(data_loader))
+    flow = lucas_kanade(batch['input'])
+
+    print(flow.shape)
+
+    import PIL
+    PIL.Image.fromarray((flow.squeeze().permute(1, 2, 0).numpy()).astype('uint8')).show()

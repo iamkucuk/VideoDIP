@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 
-class OpticalFlowLucasKanade:
+class Farneback:
     """
     Optical flow estimation using Lucas-Kanade method from OpenCV.
     """
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     dataset = VideoDIPDataset("video_dip/data/sora.mp4")
     data_loader = DataLoader(dataset, batch_size=2, num_workers=8)
 
-    lucas_kanade = OpticalFlowLucasKanade()
+    lucas_kanade = Farneback()
     batch = next(iter(data_loader))
     flow = lucas_kanade(batch['input'])
 

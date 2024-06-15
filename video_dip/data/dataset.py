@@ -62,6 +62,8 @@ class VideoDIPDataset(Dataset):
                 frames = self._dump_video(path)
             else:
                 raise ValueError(f"File {path} is not a valid video file")
+        # sort the frames
+        frames.sort()
         return frames       
 
     def _dump_video(self, path):
@@ -118,13 +120,28 @@ class VideoDIPDataset(Dataset):
             # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
+    
+    @staticmethod
+    def default_flow_transforms():
+        """
+        Returns the default transforms to be applied to the optical flow frames.
+
+        Returns:
+            torchvision.transforms.Compose: The default transforms.
+        """
+        from torchvision import transforms
+
+        return transforms.Compose([
+            transforms.ToTensor(),
+            # transforms.Resize((256, 256)),
+        ])
 
     def __len__(self):
         return len(self.input_frames)
     
     def __getitem__(self, idx):
         frame = self._load_image(self.input_frames[idx])
-        datum = {"input": self.transforms(frame)}
+        datum = {"input": self.transforms(frame), "filename": os.path.basename(self.input_frames[idx])}
         if self.target_frames is not None:
             target_frame = self._load_image(self.target_frames[idx])
             datum["target"] = self.transforms(target_frame)

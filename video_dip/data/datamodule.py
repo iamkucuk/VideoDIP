@@ -67,9 +67,11 @@ class VideoDIPDataModule(pl.LightningDataModule):
         Args:
             stage (str, optional): Stage of the training. Defaults to None.
         """
-        if self.flow_model is None:
+        if self.flow_model is not None:
             flow_folder = self.dump_optical_flow()
             del self.flow_model
+        else:
+            flow_folder = self.input_path + '_flow'
         self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):

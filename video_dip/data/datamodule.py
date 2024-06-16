@@ -31,7 +31,7 @@ class VideoDIPDataModule(pl.LightningDataModule):
         """
         import os
         from tqdm.auto import tqdm
-        from torchvision.utils import save_image
+        import numpy as np
 
         flow_folder = path if path is not None else self.input_path + '_flow'
         if os.path.exists(flow_folder):
@@ -49,12 +49,15 @@ class VideoDIPDataModule(pl.LightningDataModule):
             img2 = dataset[i]['input']
             base_name = dataset[i]['filename']
             flow = self.flow_model(img1, img2)
-            save_image(flow / 255, os.path.join(flow_folder, base_name))
+            # Save the flow as npy
+            np.save(os.path.join(flow_folder, base_name), flow)
+            
 
         return flow_folder
 
     def setup(self, stage=None):
         flow_folder = self.dump_optical_flow()
+        del self.flow_model
         self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):

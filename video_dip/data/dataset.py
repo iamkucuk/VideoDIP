@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import torch
 from torch.utils.data import Dataset
 from glob import glob
 from PIL import Image
@@ -33,7 +35,9 @@ class VideoDIPDataset(Dataset):
 
         self.input_frames = self._get_frames(input_path)
         self.target_frames = self._get_frames(target_path) if target_path is not None else None
-        self.optical_flow_frames = self._get_frames(flow_path) if flow_path is not None else None
+        self.optical_flow_frames = glob(os.path.join(flow_path, "*.npy")) if flow_path is not None else None
+        if self.optical_flow_frames is not None:
+            self.optical_flow_frames.sort()
 
         self.transforms = transforms if transforms is not None else self.default_transforms()
 
@@ -114,9 +118,10 @@ class VideoDIPDataset(Dataset):
         """
         from torchvision import transforms
 
+        # TODO: Probably, we want to normalize the input image respecting the VGG training 
         return transforms.Compose([
             transforms.ToTensor(),
-            transforms.Resize((256, 256)),
+            transforms.Resize((480, 856)),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
     
@@ -135,17 +140,26 @@ class VideoDIPDataset(Dataset):
         ])
 
     def __len__(self):
-        return len(self.input_frames)
+        if self.optical_flow_frames is None:
+            return len(self.input_frames)
+        return len(self.input_frames) - 2 # Omit the first two frames
     
     def __getitem__(self, idx):
+        datum = {}
+        if self.optical_flow_frames is not None:
+            idx += 2 # Skip the first two frames
+            # flow_frame = self._load_image(self.optical_flow_frames[idx])
+            # prev_flow_frame = self._load_image(self.optical_flow_frames[idx - 1])
+            # datum["flow"] = self.transforms(flow_frame)
+            # datum["prev_flow"] = self.transforms(prev_flow_frame)
+            datum['flow'] = torch.tensor(np.load(self.optical_flow_frames[idx - 1]))
+            datum['prev_flow'] = torch.tensor(np.load(self.optical_flow_frames[idx - 2]))
+
         frame = self._load_image(self.input_frames[idx])
-        datum = {"input": self.transforms(frame), "filename": os.path.basename(self.input_frames[idx])}
+        datum.update({"input": self.transforms(frame), "filename": os.path.basename(self.input_frames[idx])})
         if self.target_frames is not None:
             target_frame = self._load_image(self.target_frames[idx])
             datum["target"] = self.transforms(target_frame)
-        if self.optical_flow_frames is not None:
-            flow_frame = self._load_image(self.optical_flow_frames[idx])
-            datum["flow"] = self.transforms(flow_frame)
         return datum
 
 if __name__ == '__main__':

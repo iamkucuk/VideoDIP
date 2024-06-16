@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class OpticalFlowWarpLoss(nn.Module):
     """
@@ -9,7 +10,7 @@ class OpticalFlowWarpLoss(nn.Module):
         super(OpticalFlowWarpLoss, self).__init__()
         self.l1_loss = nn.L1Loss()
 
-    def forward(self, flow, x, x_hat):
+    def forward(self, flow, prev_alpha_out, alpha_out):
         """
         Calculate the optical flow warp loss.
 
@@ -21,8 +22,8 @@ class OpticalFlowWarpLoss(nn.Module):
         Returns:
             torch.Tensor: Optical flow warp loss.
         """
-        warped_x = self.warp(x, flow)
-        return self.l1_loss(warped_x, x_hat)
+        warped = self.warp(prev_alpha_out, flow)
+        return self.l1_loss(warped, alpha_out)
     
     @staticmethod
     def warp(x, flow):
@@ -30,18 +31,30 @@ class OpticalFlowWarpLoss(nn.Module):
         Warp an image/tensor (x) according to the given flow.
 
         Args:
-            x (torch.Tensor): Image tensor.
-            flow (torch.Tensor): Optical flow tensor.
+            x (torch.Tensor): Image tensor of shape (N, C, H, W).
+            flow (torch.Tensor): Optical flow tensor of shape (N, 2, H, W).
 
         Returns:
-            torch.Tensor: Warped image tensor.
+            torch.Tensor: Warped image tensor of shape (N, C, H, W).
         """
-        B, C, H, W = x.size()
-        grid = torch.meshgrid(torch.arange(H), torch.arange(W))
-        grid = torch.stack(grid, dim=-1).float().cuda()
-        grid = grid.unsqueeze(0).repeat(B, 1, 1, 1)
-        grid = grid + flow.permute(0, 2, 3, 1)
-        grid[..., 0] = 2.0 * grid[..., 0] / (H - 1) - 1.0
-        grid[..., 1] = 2.0 * grid[..., 1] / (W - 1) - 1.0
-        grid = grid.permute(0, 2, 3, 1)
-        return nn.functional.grid_sample(x, grid)
+        N, C, H, W = x.size()
+        # Create mesh grid
+        grid_y, grid_x = torch.meshgrid(torch.arange(0, H), torch.arange(0, W))
+        grid = torch.stack((grid_x, grid_y), 2).float()  # (H, W, 2)
+        grid = grid.unsqueeze(0).repeat(N, 1, 1, 1).to(x.device)  # (N, H, W, 2)
+        
+        # Normalize the grid to [-1, 1]
+        grid[:, :, :, 0] = 2.0 * grid[:, :, :, 0] / (W - 1) - 1.0
+        grid[:, :, :, 1] = 2.0 * grid[:, :, :, 1] / (H - 1) - 1.0
+        
+        # Add optical flow to the grid
+        flow = flow.permute(0, 2, 3, 1)  # (N, H, W, 2)
+        vgrid = grid + flow
+        
+        # Normalize vgrid to [-1, 1]
+        vgrid[:, :, :, 0] = 2.0 * vgrid[:, :, :, 0] / (W - 1) - 1.0
+        vgrid[:, :, :, 1] = 2.0 * vgrid[:, :, :, 1] / (H - 1) - 1.0
+        
+        # Perform grid sampling
+        output = F.grid_sample(x, vgrid, mode='bilinear', padding_mode='border', align_corners=True)
+        return output

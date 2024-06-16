@@ -3,6 +3,7 @@ import torchvision
 from typing import Any, Tuple, Union, List
 from enum import Enum
 from torchvision.utils import flow_to_image
+from torch.cuda.amp import autocast
 
 class RAFTModelSize(Enum):
     SMALL = 'raft_small'
@@ -21,6 +22,16 @@ class RAFT:
         self.model, self.raft_transforms = self._load_model(model_size, **kwargs)
         self.model.eval()
         self._original_size = None
+
+    def half(self):
+        """
+        Converts the model to half precision.
+
+        Returns:
+            RAFT: The model in half precision.
+        """
+        self.model = self.model.half()
+        return self
 
     def _load_model(self, model_size: RAFTModelSize, **kwargs: Any) -> torch.nn.Module:
         """
@@ -64,7 +75,8 @@ class RAFT:
         image1, image2 = image1.to(self.device), image2.to(self.device)
 
         with torch.no_grad():
-            flow_predictions = self.model(image1, image2)
+            with autocast():
+                flow_predictions = self.model(image1, image2)
         return self.postprocess(flow_predictions)
     
     def __call__(self, *args: Any, **kwds: Any) -> Any:
@@ -120,7 +132,7 @@ class RAFT:
         """
         transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Resize((520, 960), antialias=False),
+            torchvision.transforms.Resize((480, 856), antialias=False),
         ])
         if isinstance(image, torch.Tensor):
             transform.transforms = transform.transforms[1:]
@@ -136,11 +148,8 @@ class RAFT:
         Returns:
             Any: The postprocessed flow.
         """
-        flow = flow_to_image(flow[-1] / 255)
-        flow = torchvision.transforms.Resize(self._original_size[-2:])(flow)
-        return flow
-
-
+        # Return np array
+        return flow[-1].cpu().numpy().squeeze(0)
 
 # Usage example
 if __name__ == "__main__":

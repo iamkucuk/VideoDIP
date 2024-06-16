@@ -2,54 +2,56 @@ import torch.nn as nn
 from torch.nn.functional import interpolate
 
 class UNet(nn.Module):
-    """
-    U-Net architecture used for both RGB-Net and α-Net.
-    
-    Attributes:
-        encoder (nn.Sequential): Encoder part of the U-Net.
-        decoder (nn.Sequential): Decoder part of the U-Net.
-    """
-    def __init__(self, in_channels, out_channels):
-        """
-        Initialize the U-Net with given input and output channels.
-
-        Args:
-            in_channels (int): Number of input channels.
-            out_channels (int): Number of output channels.
-        """
+    def __init__(self, in_channels=3, channels=[64, 64, 96, 128, 128, 128, 128, 96]):
         super(UNet, self).__init__()
-        
-        # Encoder part of U-Net
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),  # Convolutional layer with 64 filters
-            nn.BatchNorm2d(64),  # Batch normalization
-            nn.LeakyReLU(0.2),  # Leaky ReLU activation
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(0.2),
-            nn.MaxPool2d(2)  # Max pooling layer to downsample
+            self._conv(in_channels, channels[0]),
+            self._conv(channels[0], channels[1]),
+            nn.MaxPool2d(2),
+            self._conv(channels[1], channels[2]),
+            self._conv(channels[2], channels[3]),
+            nn.MaxPool2d(2),
+            self._conv(channels[3], channels[4]),
+            self._conv(channels[4], channels[5]),
+            self._conv(channels[5], channels[6]),
+            nn.MaxPool2d(2),
+            nn.Conv2d(channels[6], channels[7], 4, 1, 0)
         )
-        
-        # Decoder part of U-Net
         self.decoder = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(64, out_channels, kernel_size=3, padding=1),
-            nn.Sigmoid()  # Sigmoid activation for the final layer
+            self._upconv(channels[7], channels[6], 4, 1, 0),
+            nn.Upsample(scale_factor=2, mode='bicubic'),
+            self._conv(channels[6], channels[5]),
+            self._conv(channels[5], channels[4]),
+            self._conv(channels[4], channels[3]),
+            nn.Upsample(scale_factor=2, mode='bicubic'),
+            self._conv(channels[3], channels[2]),
+            self._conv(channels[2], channels[1]),
+            nn.Upsample(scale_factor=2, mode='bicubic'),
+            self._conv(channels[1], channels[0]),
+            nn.ConvTranspose2d(channels[0], in_channels, 3, 1, 1)
+        )
+
+    def _conv(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding),
+            nn.BatchNorm2d(out_channels),
+            nn.LeakyReLU(0.2)
+        )
+
+    def _upconv(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        return nn.Sequential(
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding),
+            nn.BatchNorm2d(out_channels),
+            nn.LeakyReLU(0.2)
         )
 
     def forward(self, x):
-        """
-        Forward pass of the U-Net.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-
-        Returns:
-            torch.Tensor: Output tensor.
-        """
-        x = self.encoder(x)
-        x = interpolate(x, scale_factor=2, mode='bicubic')  # Upsampling using bicubic interpolation
-        x = self.decoder(x)
+        encoder_outputs = []
+        for layer in self.encoder:
+            x = layer(x)
+            encoder_outputs.append(x)
+        
+        for idx, layer in enumerate(self.decoder):
+            x = layer(x + encoder_outputs[-(idx + 1)])
+        
         return x

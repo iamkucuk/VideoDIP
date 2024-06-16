@@ -19,8 +19,8 @@ class VDPModel(nn.Module):
             learning_rate (float): Learning rate for the optimizer. Default is 1e-3.
         """
         super(VDPModel, self).__init__()
-        self.rgb_net = UNet(3, 3)  # RGB-Net with 3 input and 3 output channels
-        self.alpha_net = UNet(3, 1)  # α-Net with 3 input and 1 output channel
+        self.rgb_net = UNet()  # RGB-Net with 3 input and 3 output channels
+        self.alpha_net = UNet()  # α-Net with 3 input and 1 output channel
 
     def forward(self, x):
         """

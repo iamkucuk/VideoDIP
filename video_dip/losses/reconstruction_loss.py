@@ -14,7 +14,7 @@ class ReconstructionLoss(nn.Module):
     def __init__(self):
         super(ReconstructionLoss, self).__init__()
         self.perceptual_loss = PerceptualLoss()
-        self.L1_loss = nn.L1Loss()
+        self.l1_loss = nn.L1Loss()
 
     def forward(self, x, x_hat):
         """
@@ -28,6 +28,6 @@ class ReconstructionLoss(nn.Module):
             torch.Tensor: Combined reconstruction loss.
         """
         # l1_loss = torch.mean(torch.abs(x - x_hat))  # L1 loss
-        l1_loss = self.L1_loss(x, x_hat)
+        l1_loss = self.l1_loss(x, x_hat)
         perceptual_loss = self.perceptual_loss(x, x_hat)  # Perceptual loss
         return l1_loss + perceptual_loss

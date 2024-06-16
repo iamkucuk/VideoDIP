@@ -56,8 +56,9 @@ class VideoDIPDataModule(pl.LightningDataModule):
         return flow_folder
 
     def setup(self, stage=None):
-        flow_folder = self.dump_optical_flow()
-        del self.flow_model
+        if self.flow_model is None:
+            flow_folder = self.dump_optical_flow()
+            del self.flow_model
         self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):

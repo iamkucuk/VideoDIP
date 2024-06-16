@@ -59,7 +59,7 @@ class VDPModule(pl.LightningModule):
 
         loss = self.loss_weights[0] * rec_loss + self.loss_weights[1] * warp_loss
 
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         self.log("rec_loss", rec_loss)
         self.log("warp_loss", warp_loss)
 

@@ -12,7 +12,7 @@ model = RelightVDPModule()
 data_module = VideoDIPDataModule(
     input_path="datasets/input/pair1", 
     target_path="datasets/GT/pair1",
-    flow_model=RAFT(RAFTModelSize.LARGE),
+    flow_model=None, #RAFT(RAFTModelSize.LARGE),
     batch_size=4, 
     num_workers=4
 )

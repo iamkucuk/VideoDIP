@@ -3,7 +3,6 @@ import torch
 import torchvision
 
 from video_dip.models.unet import UNet
-from video_dip.models.vdp import VDPModel
 from video_dip.losses import ReconstructionLoss, OpticalFlowWarpLoss
 
 class VDPModule(pl.LightningModule):

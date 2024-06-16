@@ -7,6 +7,7 @@ class OpticalFlowWarpLoss(nn.Module):
     """
     def __init__(self):
         super(OpticalFlowWarpLoss, self).__init__()
+        self.l1_loss = nn.L1Loss()
 
     def forward(self, flow, x, x_hat):
         """
@@ -21,7 +22,7 @@ class OpticalFlowWarpLoss(nn.Module):
             torch.Tensor: Optical flow warp loss.
         """
         warped_x = self.warp(x, flow)
-        return torch.mean((warped_x - x_hat) ** 2)
+        return self.l1_loss(warped_x, x_hat)
     
     @staticmethod
     def warp(x, flow):

@@ -20,6 +20,7 @@ class RAFT:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.raft_transforms = self._load_model(model_size, **kwargs)
         self.model.eval()
+        self._original_size = None
 
     def _load_model(self, model_size: RAFTModelSize, **kwargs: Any) -> torch.nn.Module:
         """
@@ -90,14 +91,20 @@ class RAFT:
             torch.Tensor: The prepared image tensor.
         """
         if isinstance(image, list):
+            self._original_size = image[0].shape
             if not all(isinstance(img, torch.Tensor) for img in image):
                 image = [self._apply_transform(img) for img in image]
             image = torch.stack(image)
         elif not isinstance(image, torch.Tensor):
+            self._original_size = image.size
             image = self._apply_transform(image)
             image = image.unsqueeze(0)
         elif len(image.shape) == 3:
+            self._original_size = image.shape
             image = image.unsqueeze(0)
+            image = self._apply_transform(image)
+        elif len(image.shape) == 4:
+            self._original_size = image[0].shape
             image = self._apply_transform(image)
         return image
 
@@ -129,8 +136,11 @@ class RAFT:
         Returns:
             Any: The postprocessed flow.
         """
-        # This is a placeholder for postprocessing code
-        return flow_to_image(flow[-1])
+        flow = flow_to_image(flow[-1] / 255)
+        flow = torchvision.transforms.Resize(self._original_size[-2:])(flow)
+        return flow
+
+
 
 # Usage example
 if __name__ == "__main__":

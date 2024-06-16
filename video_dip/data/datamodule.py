@@ -33,9 +33,11 @@ class VideoDIPDataModule(pl.LightningDataModule):
         from tqdm.auto import tqdm
         from torchvision.utils import save_image
 
-        flow_folder = path if path is not None else os.path.join(self.input_path, "flow")
-        if not os.path.exists(flow_folder):
-            os.makedirs(flow_folder)
+        flow_folder = path if path is not None else self.input_path + '_flow'
+        if os.path.exists(flow_folder):
+            import shutil
+            shutil.rmtree(flow_folder)
+        os.makedirs(flow_folder)
         
         dataset = VideoDIPDataset(
             self.input_path,
@@ -49,25 +51,27 @@ class VideoDIPDataModule(pl.LightningDataModule):
             flow = self.flow_model(img1, img2)
             save_image(flow / 255, os.path.join(flow_folder, base_name))
 
+        return flow_folder
+
     def setup(self, stage=None):
-        self.dump_optical_flow()
-        if stage == 'fit' or stage is None:
-            self.train_dataset = VideoDIPDataset()
-            self.val_dataset = VideoDIPDataset()
-        if stage == 'test' or stage is None:
-            self.test_dataset = VideoDIPDataset()
+        flow_folder = self.dump_optical_flow()
+        self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
     
 if __name__ == '__main__':
 
     module = VideoDIPDataModule("datasets/GT/pair1", batch_size=2, num_workers=8, flow_model=RAFT(RAFTModelSize.LARGE))
+    
+    if os.path.exists("flow_outputs"):
+        import shutil
+        shutil.rmtree("flow_outputs")
     module.dump_optical_flow('flow_outputs')
     

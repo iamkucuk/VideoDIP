@@ -10,7 +10,6 @@ class VDPModel(nn.Module):
         rgb_net (UNet): U-Net for predicting RGB layers.
         alpha_net (UNet): U-Net for predicting alpha (opacity) layers.
         learning_rate (float): Learning rate for the optimizer.
-        vgg (nn.Module): Pretrained VGG16 model for perceptual loss calculation.
     """
     def __init__(self):
         """
@@ -33,6 +32,6 @@ class VDPModel(nn.Module):
         Returns:
             tuple: RGB layers and alpha layers.
         """
-        rgb_layers = self.rgb_net(x)
-        alpha_layers = self.alpha_net(x)
-        return rgb_layers, alpha_layers
+        rgb_output = self.rgb_net(x)
+        alpha_output = self.alpha_net(x)
+        return {'rgb': rgb_output, 'alpha': alpha_output}

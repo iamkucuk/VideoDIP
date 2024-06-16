@@ -1,22 +1,22 @@
 import pytorch_lightning as pl
 
-try:
-    from video_dip.data.dataset import VideoDIPDataset
-    from video_dip.models.optical_flow import Farneback, RAFT, RAFTModelSize
-    
-except ImportError:
-    import sys
-    import os
-    # Add parent of parent directory to path
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
-
-    from video_dip.data.dataset import VideoDIPDataset
-    from video_dip.models.optical_flow import Farneback, RAFT, RAFTModelSize
+from video_dip.data.dataset import VideoDIPDataset
+from video_dip.models.optical_flow import Farneback
 
 from torch.utils.data import DataLoader
 
 class VideoDIPDataModule(pl.LightningDataModule):
     def __init__(self, input_path, batch_size, num_workers, flow_model = Farneback(), target_path=None):
+        """
+        Initializes the VideoDIPDataModule.
+
+        Args:
+            input_path (str): Path to the input data.
+            batch_size (int): Batch size for data loading.
+            num_workers (int): Number of workers for data loading.
+            flow_model (object, optional): Optical flow model. Defaults to Farneback().
+            target_path (str, optional): Path to the target data. Defaults to None.
+        """
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -27,7 +27,13 @@ class VideoDIPDataModule(pl.LightningDataModule):
 
     def dump_optical_flow(self, path=None):
         """
-        Dump the optical flow to a folder. 
+        Dump the optical flow to a folder.
+
+        Args:
+            path (str, optional): Path to the folder to save the optical flow. Defaults to None.
+
+        Returns:
+            str: Path to the saved optical flow folder.
         """
         import os
         from tqdm.auto import tqdm
@@ -52,28 +58,31 @@ class VideoDIPDataModule(pl.LightningDataModule):
             # Save the flow as npy
             np.save(os.path.join(flow_folder, base_name), flow)
             
-
         return flow_folder
 
     def setup(self, stage=None):
+        """
+        Set up the data module.
+
+        Args:
+            stage (str, optional): Stage of the training. Defaults to None.
+        """
         if self.flow_model is None:
             flow_folder = self.dump_optical_flow()
             del self.flow_model
         self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        """
+        Returns the data loader for training.
 
-    def val_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self):
+        Returns:
+            torch.utils.data.DataLoader: Data loader for training.
+        """
         return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
     
 if __name__ == '__main__':
-
     module = VideoDIPDataModule("datasets/GT/pair1", batch_size=2, num_workers=8, flow_model=RAFT(RAFTModelSize.LARGE))
-    
     if os.path.exists("flow_outputs"):
         import shutil
         shutil.rmtree("flow_outputs")

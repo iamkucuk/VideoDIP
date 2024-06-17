@@ -11,8 +11,7 @@ class ImageLogger(pl.Callback):
 
     def on_validation_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs: torch.Tensor | torch.Dict[str, torch.Any] | None, batch: torch.Any, batch_idx: int, dataloader_idx: int = 0) -> None:
         num_total_batches = len(trainer.val_dataloaders)
-        log_points = np.linspace(0, num_total_batches, self.num_images + 1, endpoint=False).astype(int)[1:]
-        log_points = [num_total_batches - 2] if self.num_images == 1 else log_points
+        log_points = np.linspace(0, num_total_batches, self.num_images + 1, endpoint=False).astype(int)[1:] if self.num_images > 1 else [num_total_batches - 2]
         if batch_idx in log_points:
             if isinstance(trainer.logger, TensorBoardLogger):
                 self.log_images_tensorboard(
@@ -36,36 +35,6 @@ class ImageLogger(pl.Callback):
                     stage='val', 
                     global_step=trainer.global_step
                 )
-            
-
-    # def on_validation_epoch_end(self, trainer, pl_module):
-    #     self.log_images(trainer, pl_module, 'val')
-
-    # def on_test_epoch_end(self, trainer, pl_module):
-    #     self.log_images(trainer, pl_module, 'test')
-
-    # def log_images(self, trainer, pl_module, stage):
-    #     # Get the last batch from the validation or test dataloader
-    #     dataloader = trainer.val_dataloaders.dataset if stage == 'val' else trainer.test_dataloaders.dataset
-    #     last_batch = next(iter(dataloader))
-    #     inputs, labels = last_batch
-    #     inputs = inputs[:self.num_images]
-    #     labels = labels[:self.num_images]
-        
-    #     # Make sure to move inputs and labels to the same device as the model
-    #     inputs = inputs.to(pl_module.device)
-    #     labels = labels.to(pl_module.device)
-        
-    #     # Get the model predictions
-    #     pl_module.eval()
-    #     with torch.no_grad():
-    #         preds = pl_module(inputs)
-        
-    #     # Log images
-    #     if isinstance(trainer.logger, TensorBoardLogger):
-    #         self.log_images_tensorboard(trainer.logger, inputs, labels, preds, stage, trainer.global_step)
-    #     elif isinstance(trainer.logger, WandbLogger):
-    #         self.log_images_wandb(trainer.logger, inputs, labels, preds, stage, trainer.global_step)
 
     def log_images_tensorboard(self, logger, inputs, labels, preds_rgb, preds_alpha, preds_reconstructed, stage, global_step):
         import torchvision.utils as vutils

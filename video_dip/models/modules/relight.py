@@ -1,5 +1,6 @@
 import torch
 from . import VDPModule
+from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 
 class RelightVDPModule(VDPModule):
     """
@@ -16,6 +17,9 @@ class RelightVDPModule(VDPModule):
         # Randomly initialize a parameter named gamma
         self.register_buffer("gamma_inv", torch.tensor(1.0))
 
+        self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
+        self.psnr = PeakSignalNoiseRatio(data_range=1.0)
+
         self.save_hyperparameters()
 
     def reconstruction_fn(self, rgb_output, alpha_output):
@@ -30,4 +34,18 @@ class RelightVDPModule(VDPModule):
             torch.Tensor: The reconstructed output tensor.
         """
         return alpha_output * rgb_output ** self.gamma_inv
+    
+    def validation_step(self, batch, batch_idx):
+        outputs = super().validation_step(batch, batch_idx)
+
+        rgb_output = outputs['rgb_output']
+        gt = batch['target']
+
+        # Compute PSNR and SSIM
+        self.psnr(rgb_output, gt)
+        self.ssim(rgb_output, gt)
+
+        self.log('psnr', self.psnr, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True)
+        return outputs
     

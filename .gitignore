@@ -164,3 +164,5 @@ datasets
 flow_outputs/
 lightning_logs/
 tb_logs/
+wandb/
+*ckpt

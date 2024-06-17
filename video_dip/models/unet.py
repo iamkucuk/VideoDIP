@@ -28,7 +28,10 @@ class UNet(nn.Module):
             self._conv(channels[4], channels[5]),
             self._conv(channels[5], channels[6]),
             nn.MaxPool2d(2),
-            nn.Conv2d(channels[6], channels[7], 4, 1, 0)
+            nn.Sequential(
+                nn.Conv2d(channels[6], channels[7], 4, 1, 0),
+                nn.Sigmoid()
+            )
         )
         self.decoder = nn.Sequential(
             self._upconv(channels[7], channels[6], 4, 1, 0),
@@ -41,7 +44,10 @@ class UNet(nn.Module):
             self._conv(channels[2], channels[1]),
             nn.Upsample(scale_factor=2, mode='bicubic'),
             self._conv(channels[1], channels[0]),
-            nn.ConvTranspose2d(channels[0], in_channels, 3, 1, 1)
+            nn.Sequential(
+                nn.ConvTranspose2d(channels[0], in_channels, 3, 1, 1),
+                nn.Sigmoid()
+            )
         )
 
     def _conv(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):

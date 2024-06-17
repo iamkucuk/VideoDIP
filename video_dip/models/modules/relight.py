@@ -15,7 +15,7 @@ class RelightVDPModule(VDPModule):
         super().__init__(learning_rate, loss_weights)
 
         # Randomly initialize a parameter named gamma
-        self.register_buffer("gamma_inv", torch.tensor(1.0))
+        self.gamma_inv = torch.nn.Parameter(torch.tensor(1.0))
 
         self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
@@ -47,5 +47,7 @@ class RelightVDPModule(VDPModule):
 
         self.log('psnr', self.psnr, on_step=False, on_epoch=True, prog_bar=True)
         self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('gamma_inv', self.gamma_inv, on_step=False, on_epoch=True, prog_bar=True)
+
         return outputs
     

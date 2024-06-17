@@ -143,7 +143,7 @@ class VDPModule(pl.LightningModule):
         """
         outputs = self.inference(batch, batch_idx)
 
-        # Add metrics here
+        return outputs
         
     def configure_optimizers(self):
         """

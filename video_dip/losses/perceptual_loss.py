@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from torchvision.models import vgg16
+# from torchvision.models import vgg16
+from video_dip.models import VGG
 
 class PerceptualLoss(nn.Module):
     """
@@ -11,9 +12,6 @@ class PerceptualLoss(nn.Module):
     """
     def __init__(self):
         super(PerceptualLoss, self).__init__()
-        self.vgg = vgg16(pretrained=True).features[:16].eval()
-        for param in self.vgg.parameters():
-            param.requires_grad = False
 
     def forward(self, x, y):
         """
@@ -26,6 +24,10 @@ class PerceptualLoss(nn.Module):
         Returns:
             torch.Tensor: Perceptual loss.
         """
-        x_features = self.vgg(x)
-        y_features = self.vgg(y)
+        try:
+            x_features = VGG(x)
+        except RuntimeError:
+            VGG.to(x.device)
+            x_features = VGG(x)
+        y_features = VGG(y)
         return torch.mean((x_features - y_features) ** 2)

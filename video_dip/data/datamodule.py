@@ -6,7 +6,7 @@ from video_dip.models.optical_flow import Farneback
 from torch.utils.data import DataLoader
 
 class VideoDIPDataModule(pl.LightningDataModule):
-    def __init__(self, input_path, batch_size, num_workers, flow_model = Farneback(), target_path=None):
+    def __init__(self, input_path, batch_size, num_workers, flow_model=None, flow_path=None, target_path=None):
         """
         Initializes the VideoDIPDataModule.
 
@@ -16,6 +16,7 @@ class VideoDIPDataModule(pl.LightningDataModule):
             num_workers (int): Number of workers for data loading.
             flow_model (object, optional): Optical flow model. Defaults to Farneback().
             target_path (str, optional): Path to the target data. Defaults to None.
+            flow_path (str, optional): Path to the optical flow data. Defaults to None.
         """
         super().__init__()
         self.batch_size = batch_size
@@ -23,7 +24,10 @@ class VideoDIPDataModule(pl.LightningDataModule):
         self.input_path = input_path
         self.target_path = target_path
 
+        assert (flow_model is not None) or (flow_path is not None), "Either flow_model or flow_path must be provided."
+
         self.flow_model = flow_model
+        self.flow_path = flow_path
 
     def dump_optical_flow(self, path=None):
         """
@@ -67,11 +71,10 @@ class VideoDIPDataModule(pl.LightningDataModule):
         Args:
             stage (str, optional): Stage of the training. Defaults to None.
         """
+        flow_folder = self.flow_path if self.flow_path is not None else None
         if self.flow_model is not None:
-            flow_folder = self.dump_optical_flow()
+            flow_folder = self.dump_optical_flow(path=flow_folder)
             del self.flow_model
-        else:
-            flow_folder = self.input_path + '_flow'
         self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
 
     def train_dataloader(self):
@@ -80,6 +83,15 @@ class VideoDIPDataModule(pl.LightningDataModule):
 
         Returns:
             torch.utils.data.DataLoader: Data loader for training.
+        """
+        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+    
+    def val_dataloader(self):
+        """
+        Returns the data loader for validation.
+
+        Returns:
+            torch.utils.data.DataLoader: Data loader for validation.
         """
         return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
     

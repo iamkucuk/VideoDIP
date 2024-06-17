@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
+from video_dip.callbacks.image_logger import ImageLogger
 from video_dip.models.modules.relight import RelightVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
@@ -12,16 +13,25 @@ model = RelightVDPModule()
 data_module = VideoDIPDataModule(
     input_path="datasets/input/pair1", 
     target_path="datasets/GT/pair1",
-    flow_model=RAFT(RAFTModelSize.LARGE),
+    #flow_model=RAFT(RAFTModelSize.LARGE),
+    flow_path="datasets/input/pair1_flow",
     batch_size=4, 
-    num_workers=4
+    num_workers=8
 )
 
 # Initialize the TensorBoard logger
-logger = TensorBoardLogger("tb_logs", name="relight_vdp")
+tensorboard_logger = TensorBoardLogger("tb_logs", name="my_model")
+wandb_logger = WandbLogger(project="video_dip_relighting")
+wandb_logger.watch(model)
 
 # Initialize the trainer with the logger
-trainer = pl.Trainer(logger=logger, devices=1, max_epochs=10, precision='bf16')
+trainer = pl.Trainer(
+    logger=wandb_logger, 
+    devices=1, 
+    max_epochs=100, 
+    callbacks=[ImageLogger(num_images=1)]
+    # sync_batchnorm=True
+)
 
 # Fit the model
 trainer.fit(model, datamodule=data_module)

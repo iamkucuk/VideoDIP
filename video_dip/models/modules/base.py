@@ -31,10 +31,10 @@ class VDPModule(pl.LightningModule):
 
     """
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[1, .02]):
+    def __init__(self, learning_rate=2e-3, loss_weights=[1, .02]):
         super().__init__()
-        self.rgb_net = UNet()  # RGB-Net with 3 input and 3 output channels
-        self.alpha_net = UNet()
+        self.rgb_net = UNet(out_channels=3)  # RGB-Net with 3 input and 3 output channels
+        self.alpha_net = UNet(out_channels=1)  # Alpha-Net with 3 input and 1 output channels (for optical flow
         self.learning_rate = learning_rate
 
         self.reconstruction_loss = ReconstructionLoss()
@@ -119,10 +119,11 @@ class VDPModule(pl.LightningModule):
 
         """
         outputs = self.inference(batch, batch_idx)
-        prev_alpha_output = self(flow=torchvision.utils.flow_to_image(batch['prev_flow']) / 255.0)['alpha'].detach()
+        # prev_alpha_output = self(flow=torchvision.utils.flow_to_image(batch['prev_input']) / 255.0)['alpha'].detach()
+        prev_output = self(img=batch['prev_input'])['rgb'].detach()
 
         rec_loss = self.reconstruction_loss(outputs['input'], outputs['reconstructed'])
-        warp_loss = self.warp_loss(outputs['flow'], prev_alpha_output, outputs['alpha_output'])
+        warp_loss = self.warp_loss(outputs['flow'], prev_output, outputs['alpha_output'])
 
         loss = self.loss_weights[0] * rec_loss + self.loss_weights[1] * warp_loss
 

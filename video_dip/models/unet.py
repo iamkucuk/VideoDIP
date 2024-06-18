@@ -15,7 +15,7 @@ class UNet(nn.Module):
 
     """
 
-    def __init__(self, in_channels=3, channels=[64, 64, 96, 128, 128, 128, 128, 96]):
+    def __init__(self, out_channels, in_channels=3, channels=[64, 64, 96, 128, 128, 128, 128, 96]):
         super(UNet, self).__init__()
         self.encoder = nn.Sequential(
             self._conv(in_channels, channels[0]),
@@ -45,7 +45,7 @@ class UNet(nn.Module):
             nn.Upsample(scale_factor=2, mode='bicubic'),
             self._conv(channels[1], channels[0]),
             nn.Sequential(
-                nn.ConvTranspose2d(channels[0], in_channels, 3, 1, 1),
+                nn.ConvTranspose2d(channels[0], out_channels, 3, 1, 1),
                 nn.Sigmoid()
             )
         )

@@ -4,6 +4,9 @@ from . import VDPModule
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from video_dip.losses import FlowSimilarityLoss, MaskLoss, ReconstructionLayerLoss
 from video_dip.models.unet import UNet
+import torch.nn as nn
+from torchmetrics.classification import BinaryJaccardIndex
+from torchvision.transforms.functional import rgb_to_grayscale
 
 
 class SegmentationVDPModule(VDPModule):
@@ -23,20 +26,19 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1, 1, .001, .01]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .001, .01]):
         super().__init__(learning_rate, loss_weights)
 
 
         # one additional rgb net
         self.rgb_net2 = UNet(out_channels=3)  # RGB-Net with 3 input and 3 output channels
 
-        self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
-        self.psnr = PeakSignalNoiseRatio(data_range=1.0)
-
-
         self.flow_similarity_loss = FlowSimilarityLoss()
         self.rec_layer_loss = ReconstructionLayerLoss()
         self.mask_loss = MaskLoss()
+
+
+        self.iou_metric = BinaryJaccardIndex(threshold=0.7)
 
         self.save_hyperparameters()
 
@@ -52,11 +54,12 @@ class SegmentationVDPModule(VDPModule):
         Returns:
             torch.Tensor: The reconstructed output tensor.
         """
+        # bloew part is only for L>2
         # rescale Mi's so that after addition of all masks they sum up to one (falpha)
-        summed_masks = torch.sum(alpha_output, dim = 1)
-        summed_masks = torch.unsqueeze(summed_masks, 1)
+        # summed_masks = torch.sum(alpha_output, dim = 1)
+        # summed_masks = torch.unsqueeze(summed_masks, 1)
 
-        alpha_output = alpha_output / summed_masks
+        # alpha_output = alpha_output / summed_masks
 
 
         return alpha_output * rgb_output1 + (1 - alpha_output) * rgb_output2
@@ -142,6 +145,7 @@ class SegmentationVDPModule(VDPModule):
         + rec_layer_loss
         + warp_loss
         + mask_loss
+
         
 
 
@@ -161,16 +165,19 @@ class SegmentationVDPModule(VDPModule):
     def validation_step(self, batch, batch_idx):
         outputs = self.inference(batch, batch_idx)
 
-        # rgb_output = outputs['rgb_output']
-        # gt = batch['target']
-
-        # # Compute PSNR and SSIM
-        # self.psnr(rgb_output, gt)
-        # self.ssim(rgb_output, gt)
-
-        self.log('a', 1, on_step=False, on_epoch=True, prog_bar=True)
-        # self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True)
-        # self.log('gamma_inv', self.gamma_inv, on_step=False, on_epoch=True, prog_bar=True)
-
+        # binarize segmentation groundtruth
+        gray_gt = rgb_to_grayscale(batch["target"])
+        gray_gt[gray_gt <= 0.5] = 0
+        gray_gt[gray_gt > 0.5] = 1
+        iou_score = self.iou_metric(outputs["alpha_output"], gray_gt)
+        self.log('iou_score', iou_score, on_step=False, on_epoch=True, prog_bar=True)
+        
+        
+        treshold = 0.7
+        outputs["segmentation"] = torch.ones(outputs["alpha_output"].shape)
+        outputs["segmentation"][outputs["alpha_output"] <= treshold] = 0
+        
+        outputs["segmentation_gt"] = gray_gt
+        
         return outputs
     

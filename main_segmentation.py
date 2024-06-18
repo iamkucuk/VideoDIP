@@ -7,12 +7,12 @@ from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
 
 # Initialize the model
-model = SegmentationVDPModule()
+model = SegmentationVDPModule(learning_rate=0.1)
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
     input_path="datasets/input/bear", 
-    #target_path="datasets/GT/pair1",
+    target_path="datasets/GT/bear",
     flow_model=RAFT(RAFTModelSize.LARGE),
     flow_path="datasets/input/bear_flow",
     batch_size=2, 

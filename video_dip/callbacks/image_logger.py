@@ -19,6 +19,7 @@ class ImageLogger(pl.Callback):
                     inputs=outputs['input'], 
                     labels=batch['target'], 
                     preds_rgb=outputs['rgb_output'], 
+                    preds_rgb2=outputs["rgb_outputs2"] if "rgb_outputs2" in outputs else outputs['rgb_output'],
                     preds_alpha=outputs['alpha_output'],
                     preds_reconstructed=outputs['reconstructed'],
                     stage='val', 
@@ -30,8 +31,11 @@ class ImageLogger(pl.Callback):
                     inputs=outputs['input'], 
                     labels=batch['target'] if "target" in batch else None, 
                     preds_rgb=outputs['rgb_output'],
+                    preds_rgb2=outputs["rgb_outputs2"] if "rgb_outputs2" in outputs else outputs['rgb_output'],
                     preds_alpha=outputs['alpha_output'],
                     preds_reconstructed=outputs['reconstructed'],
+                    segmentation=outputs["segmentation"] if "segmentation" in outputs else None,
+                    segmentation_gt = outputs["segmentation_gt"] if "segmentation_gt" in outputs else None,
                     stage='val', 
                     global_step=trainer.global_step
                 )
@@ -54,20 +58,44 @@ class ImageLogger(pl.Callback):
         grid = vutils.make_grid(preds_reconstructed)
         logger.experiment.add_image(f'{stage}/reconstructed', grid, global_step)
 
-    def log_images_wandb(self, logger, inputs, labels, preds_rgb, preds_alpha, preds_reconstructed, stage, global_step):
+    def log_images_wandb(self, logger, inputs, labels, preds_rgb, preds_rgb2, preds_alpha, preds_reconstructed, stage, global_step, segmentation = None, segmentation_gt = None):
         import wandb
         import torchvision.utils as vutils
 
+        
         # Create a grid of input images
         grid_inputs = vutils.make_grid(inputs)
         grid_inputs = grid_inputs.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
         wandb_inputs = wandb.Image(grid_inputs, caption=f'{stage}/inputs')
 
+
+        
+        grid_preds = vutils.make_grid(preds_rgb2)
+        grid_preds = grid_preds.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+        wandb_preds2 = wandb.Image(grid_preds, caption=f'{stage}/preds_rgb2')
+
         # Create a grid of label images (assuming labels are single-channel)
-        if labels:
+        if labels is not None:
             grid_labels = vutils.make_grid(labels)
             grid_labels = grid_labels.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
             wandb_labels = wandb.Image(grid_labels, caption=f'{stage}/labels')
+        else:
+            wandb_labels = None
+
+        if segmentation is not None:
+            # Create a grid of prediction images (assuming preds are single-channel)
+            grid_preds = vutils.make_grid(segmentation)
+            grid_preds = grid_preds.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+            wandb_segmentation = wandb.Image(grid_preds, caption=f'{stage}/segmentation')
+
+        if segmentation_gt is not None:
+            # Create a grid of prediction images (assuming preds are single-channel)
+            grid_preds = vutils.make_grid(segmentation_gt)
+            grid_preds = grid_preds.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+            wandb_segmentation_gt = wandb.Image(grid_preds, caption=f'{stage}/segmentation_gt')
+        else:
+            wandb_segmentation_gt = None
+            
 
         # Create a grid of prediction images (assuming preds are single-channel)
         grid_preds = vutils.make_grid(preds_rgb)
@@ -86,9 +114,12 @@ class ImageLogger(pl.Callback):
         # Log the images to wandb
         logger.experiment.log({
             f'{stage}/inputs': wandb_inputs,
-            f'{stage}/labels': wandb_labels if labels else None,
+            f'{stage}/labels': wandb_labels,
             f'{stage}/predictions_rgb': wandb_preds,
+            f'{stage}/predictions_rgb2': wandb_preds2,
             f'{stage}/predictions_alpha': wandb_alpha,
+            f'{stage}/predictions_segmentation': wandb_segmentation,
+            f'{stage}/wandb_segmentation_gt': wandb_segmentation_gt,
             f'{stage}/reconstructed': wandb_reconstructed,
             'global_step': global_step
         })

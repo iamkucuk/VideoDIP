@@ -28,7 +28,7 @@ class ImageLogger(pl.Callback):
                 self.log_images_wandb(
                     logger=trainer.logger, 
                     inputs=outputs['input'], 
-                    labels=batch['target'], 
+                    labels=batch['target'] if "target" in batch else None, 
                     preds_rgb=outputs['rgb_output'],
                     preds_alpha=outputs['alpha_output'],
                     preds_reconstructed=outputs['reconstructed'],
@@ -64,9 +64,10 @@ class ImageLogger(pl.Callback):
         wandb_inputs = wandb.Image(grid_inputs, caption=f'{stage}/inputs')
 
         # Create a grid of label images (assuming labels are single-channel)
-        grid_labels = vutils.make_grid(labels)
-        grid_labels = grid_labels.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
-        wandb_labels = wandb.Image(grid_labels, caption=f'{stage}/labels')
+        if labels:
+            grid_labels = vutils.make_grid(labels)
+            grid_labels = grid_labels.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+            wandb_labels = wandb.Image(grid_labels, caption=f'{stage}/labels')
 
         # Create a grid of prediction images (assuming preds are single-channel)
         grid_preds = vutils.make_grid(preds_rgb)
@@ -85,7 +86,7 @@ class ImageLogger(pl.Callback):
         # Log the images to wandb
         logger.experiment.log({
             f'{stage}/inputs': wandb_inputs,
-            f'{stage}/labels': wandb_labels,
+            f'{stage}/labels': wandb_labels if labels else None,
             f'{stage}/predictions_rgb': wandb_preds,
             f'{stage}/predictions_alpha': wandb_alpha,
             f'{stage}/reconstructed': wandb_reconstructed,

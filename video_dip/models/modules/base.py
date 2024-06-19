@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import torch
 import torchvision
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from video_dip.models.unet import UNet
 from video_dip.losses import ReconstructionLoss, OpticalFlowWarpLoss
@@ -31,7 +32,7 @@ class VDPModule(pl.LightningModule):
 
     """
 
-    def __init__(self, learning_rate=2e-3, loss_weights=[1, .02]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[1, .02], multi_step_scheduling_kwargs=None, warmup=False):
         super().__init__()
         self.rgb_net = UNet(out_channels=3)  # RGB-Net with 3 input and 3 output channels
         self.alpha_net = UNet(out_channels=1)  # Alpha-Net with 3 input and 1 output channels (for optical flow
@@ -41,6 +42,10 @@ class VDPModule(pl.LightningModule):
         self.warp_loss = OpticalFlowWarpLoss()
 
         self.loss_weights = loss_weights
+
+        self.warmup = warmup
+
+        self.multi_step_scheduling_kwargs = multi_step_scheduling_kwargs
 
     def forward(self, img=None, flow=None):
         """
@@ -61,10 +66,7 @@ class VDPModule(pl.LightningModule):
             ret['alpha'] = self.alpha_net(flow)
         return ret
         
-
-
-
-    def reconstruction_fn(self, rgb_output, alpha_output):
+    def reconstruction_fn(self, rgb_output, alpha_output, **kwargs):
         """
         Computes the reconstructed frame.
 
@@ -78,7 +80,7 @@ class VDPModule(pl.LightningModule):
         """
         raise NotImplementedError("The reconstruction function is not implemented.")
 
-    def inference(self, batch, batch_idx):
+    def inference(self, batch, batch_idx, **kwargs):
         """
         Performs inference on a batch of data.
 
@@ -99,7 +101,7 @@ class VDPModule(pl.LightningModule):
         rgb_output = output['rgb']
         alpha_output = output['alpha']
 
-        reconstructed_frame = self.reconstruction_fn(rgb_output, alpha_output)
+        reconstructed_frame = self.reconstruction_fn(rgb_output, alpha_output, **kwargs)
 
         return {
             "input": input_frames,
@@ -151,11 +153,47 @@ class VDPModule(pl.LightningModule):
         
     def configure_optimizers(self):
         """
-        Configures the optimizer.
+        Configures the optimizer and scheduler.
 
         Returns:
-            torch.optim.Optimizer: The optimizer.
+            dict: A dictionary containing the optimizer and the LR scheduler.
 
         """
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-    
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        # MultiStep Scheduler
+        ret = {'optimizer': optimizer}
+        
+        schedulers = []
+        if self.warmup:
+            # Warmup for 5 epochs from 2e-5 to self.learning_rate
+            def lr_lambda(epoch):
+                if epoch < 5:
+                    warmup_lr = 2e-5 + epoch * (self.learning_rate - 2e-5) / 5
+                    return warmup_lr / self.learning_rate
+                return 1.0
+            
+            schedulers.append(torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda))
+            ret['lr_scheduler'] = {
+                'scheduler': schedulers[0],
+                'interval': 'epoch',
+                'frequency': 1,
+            }
+
+        if self.multi_step_scheduling_kwargs is not None:
+            schedulers.append(torch.optim.lr_scheduler.MultiStepLR(optimizer, **self.multi_step_scheduling_kwargs))
+            ret['lr_scheduler'] = {
+                'scheduler': schedulers[0],
+                'interval': 'epoch',
+                'frequency': 1,
+            }
+
+        if len(schedulers) > 1:
+            combined_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers, milestones=[5])
+            ret['lr_scheduler'] = {
+                'scheduler': combined_scheduler,
+                'interval': 'epoch',
+                'frequency': 1,
+            }
+        
+        return ret
+            # Implement this

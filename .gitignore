@@ -167,3 +167,4 @@ tb_logs/
 wandb/
 *ckpt
 outdoor_png/
+.vscode/

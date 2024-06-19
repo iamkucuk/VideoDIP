@@ -26,8 +26,8 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .01, .01]):
-        super().__init__(learning_rate, loss_weights)
+    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .01, .01], **kwargs):
+        super().__init__(learning_rate, loss_weights, **kwargs)
 
 
         # one additional rgb net
@@ -92,7 +92,6 @@ class SegmentationVDPModule(VDPModule):
     def inference(self, batch, batch_idx):
         input_frames = batch['input']
         flows = batch['flow']
-
         flow_frames = torchvision.utils.flow_to_image(flows) / 255.0
 
         output = self(img=input_frames, flow=flow_frames)

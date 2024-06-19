@@ -109,7 +109,7 @@ $J_{h,w} = \sum_{i=1}^{L} M_t^i$ (8)
 where $J_{h,w}$ denotes all-ones matrix of size [h,w]
 
 
-However video decomposition problem is ill-posed and loss equation (1) is not strong enough to find a visually plausible layered decomposition of an input video.
+However video decomposition problem is ill-posed and loss equation (1) is not strong enough to find a visually plausible layered decomposition of an input video. We need opacity layers to be binary masks. Therefore, they need to 
 
 
 $ L_{\text{sim}} = \frac{\phi(M \circ F^{\text{RGB}}) \cdot \phi((1 - M) \circ F^{\text{RGB}})}{\|\phi(M \circ F^{\text{RGB}})\| \| \phi((1 - M) \circ F^{\text{RGB}})\|} $ (9)

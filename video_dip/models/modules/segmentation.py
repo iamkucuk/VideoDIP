@@ -7,7 +7,7 @@ from video_dip.models.unet import UNet
 import torch.nn as nn
 from torchmetrics.classification import BinaryJaccardIndex
 from torchvision.transforms.functional import rgb_to_grayscale
-
+from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
 
 class SegmentationVDPModule(VDPModule):
     """
@@ -116,6 +116,7 @@ class SegmentationVDPModule(VDPModule):
 
     def training_step(self, batch, batch_idx):
         outputs = self.inference(batch, batch_idx)
+        
         flow_estimate = torchvision.utils.flow_to_image(batch['prev_flow']) / 255.0
         prev_output = self(img=batch['prev_input'])['rgb'].detach()
 

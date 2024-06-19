@@ -149,7 +149,8 @@ class VideoDIPDataset(Dataset):
         datum = {}
         if self.optical_flow_frames is not None:
             idx += 1 # Skip the first frame
-            datum['flow'] = self.transforms(np.load(self.optical_flow_frames[idx - 1]))
+            datum['flow'] = np.load(self.optical_flow_frames[idx - 1])
+            datum['prev_flow'] = torch.tensor(np.load(self.optical_flow_frames[idx - 2]))
 
         datum.update({
             "input": self.transforms(self._load_image(self.input_frames[idx])), 

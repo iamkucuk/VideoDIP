@@ -17,7 +17,7 @@ data_module = VideoDIPDataModule(
     flow_model=RAFT(RAFTModelSize.LARGE),
     flow_path="datasets/input/bear_flow",
     batch_size=2, 
-    num_workers=8
+    num_workers=4
 )
 
 # Initialize the TensorBoard logger

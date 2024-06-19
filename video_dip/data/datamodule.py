@@ -4,6 +4,8 @@ from video_dip.data.dataset import VideoDIPDataset
 from video_dip.models.optical_flow import Farneback
 
 from torch.utils.data import DataLoader
+import os
+
 
 class VideoDIPDataModule(pl.LightningDataModule):
     def __init__(self, input_path, batch_size, num_workers, flow_model=None, flow_path=None, target_path=None):

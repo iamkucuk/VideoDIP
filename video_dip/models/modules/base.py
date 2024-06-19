@@ -60,6 +60,9 @@ class VDPModule(pl.LightningModule):
         if flow is not None:
             ret['alpha'] = self.alpha_net(flow)
         return ret
+        
+
+
 
     def reconstruction_fn(self, rgb_output, alpha_output):
         """

@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Main py",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/home/alpfischer/miniconda3/envs/dip_env/bin/python",
+            "program": "/home/alpfischer/METU-Courses/VideoDIP/main.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Segmentation Main py",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/home/alpfischer/miniconda3/envs/dip_env/bin/python",
+            "program": "/home/alpfischer/METU-Courses/VideoDIP/main_segmentation.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}

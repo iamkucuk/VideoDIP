@@ -3,6 +3,8 @@ from .reconstruction_loss import ReconstructionLoss
 from .perceptual_loss import PerceptualLoss
 from .optical_flow_warp_loss import OpticalFlowWarpLoss
 from .flow_similarity_loss import FlowSimilarityLoss
+from .mask_loss import MaskLoss
+from .reconstruction_layer_loss import ReconstructionLayerLoss
 
 # fismloss = FlowSimilarityLoss()
 # i = 2

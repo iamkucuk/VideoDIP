@@ -2,26 +2,26 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
 from video_dip.callbacks.image_logger import ImageLogger
-from video_dip.models.modules.relight import RelightVDPModule
+from video_dip.models.modules.segmentation import SegmentationVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
 
 # Initialize the model
-model = RelightVDPModule()
+model = SegmentationVDPModule()
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
-    input_path="datasets/input/pair1", 
-    target_path="datasets/GT/pair1",
+    input_path="datasets/input/bear", 
+    #target_path="datasets/GT/pair1",
     flow_model=RAFT(RAFTModelSize.LARGE),
-    flow_path="datasets/input/pair1_flow",
+    flow_path="datasets/input/bear_flow",
     batch_size=2, 
     num_workers=8
 )
 
 # Initialize the TensorBoard logger
 tensorboard_logger = TensorBoardLogger("tb_logs", name="my_model")
-wandb_logger = WandbLogger(project="video_dip_relighting")
+wandb_logger = WandbLogger(project="video_dip_segmentation")
 wandb_logger.watch(model)
 
 # Initialize the trainer with the logger

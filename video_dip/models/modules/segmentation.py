@@ -26,7 +26,7 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .001, .01]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[.01, 1 , 1, .01, .01]):
         super().__init__(learning_rate, loss_weights)
 
 
@@ -38,7 +38,7 @@ class SegmentationVDPModule(VDPModule):
         self.mask_loss = MaskLoss()
 
 
-        self.iou_metric = BinaryJaccardIndex(threshold=0.7)
+        self.iou_metric = BinaryJaccardIndex(threshold=0.5)
 
         self.save_hyperparameters()
 
@@ -60,6 +60,11 @@ class SegmentationVDPModule(VDPModule):
         # summed_masks = torch.unsqueeze(summed_masks, 1)
 
         # alpha_output = alpha_output / summed_masks
+
+        # remap alpha output values to 1 and 0's
+
+        # alpha_copy = torch.ones(alpha_output.sh   ape, device = alpha_output.device)        
+        # alpha_copy[alpha_output <= 0.5] = 0
 
 
         return alpha_output * rgb_output1 + (1 - alpha_output) * rgb_output2
@@ -100,6 +105,7 @@ class SegmentationVDPModule(VDPModule):
         return {
             "input": input_frames,
             "flow": flows,
+            "flow_rgb": flow_frames,
             "reconstructed": reconstructed_frame,
             "rgb_output": rgb_output,
             "rgb_output2": rgb_output2,
@@ -140,11 +146,7 @@ class SegmentationVDPModule(VDPModule):
         mask_loss = self.loss_weights[4] * torch.mean( mask_loss)
 
 
-        loss = flow_sim_loss
-        + rec_loss
-        + rec_layer_loss
-        + warp_loss
-        + mask_loss
+        loss = flow_sim_loss + rec_loss + rec_layer_loss + warp_loss + mask_loss
 
         
 
@@ -173,7 +175,7 @@ class SegmentationVDPModule(VDPModule):
         self.log('iou_score', iou_score, on_step=False, on_epoch=True, prog_bar=True)
         
         
-        treshold = 0.7
+        treshold = 0.5
         outputs["segmentation"] = torch.ones(outputs["alpha_output"].shape)
         outputs["segmentation"][outputs["alpha_output"] <= treshold] = 0
         

@@ -36,6 +36,7 @@ class ImageLogger(pl.Callback):
                     preds_reconstructed=outputs['reconstructed'],
                     segmentation=outputs["segmentation"] if "segmentation" in outputs else None,
                     segmentation_gt = outputs["segmentation_gt"] if "segmentation_gt" in outputs else None,
+                    flow_rgb = outputs["flow_rgb"] if "flow_rgb" in outputs else None,
                     stage='val', 
                     global_step=trainer.global_step
                 )
@@ -58,7 +59,7 @@ class ImageLogger(pl.Callback):
         grid = vutils.make_grid(preds_reconstructed)
         logger.experiment.add_image(f'{stage}/reconstructed', grid, global_step)
 
-    def log_images_wandb(self, logger, inputs, labels, preds_rgb, preds_rgb2, preds_alpha, preds_reconstructed, stage, global_step, segmentation = None, segmentation_gt = None):
+    def log_images_wandb(self, logger, inputs, labels, preds_rgb, preds_rgb2, preds_alpha, preds_reconstructed, stage, global_step, segmentation = None, segmentation_gt = None, flow_rgb = None) :
         import wandb
         import torchvision.utils as vutils
 
@@ -95,7 +96,14 @@ class ImageLogger(pl.Callback):
             wandb_segmentation_gt = wandb.Image(grid_preds, caption=f'{stage}/segmentation_gt')
         else:
             wandb_segmentation_gt = None
-            
+        
+        if flow_rgb is not None:
+            # Create a grid of prediction images (assuming preds are single-channel)
+            grid_preds = vutils.make_grid(flow_rgb)
+            grid_preds = grid_preds.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+            wandb_flow_rgb = wandb.Image(grid_preds, caption=f'{stage}/flow_rgb')
+        else:
+            wandb_flow_rgb = None
 
         # Create a grid of prediction images (assuming preds are single-channel)
         grid_preds = vutils.make_grid(preds_rgb)
@@ -121,5 +129,6 @@ class ImageLogger(pl.Callback):
             f'{stage}/predictions_segmentation': wandb_segmentation,
             f'{stage}/wandb_segmentation_gt': wandb_segmentation_gt,
             f'{stage}/reconstructed': wandb_reconstructed,
+            f'{stage}/wandb_flow_rgb': wandb_flow_rgb,
             'global_step': global_step
         })

@@ -7,17 +7,18 @@ from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
 from video_dip.models.optical_flow.farneback import Farneback
 
+from torch.optim.lr_scheduler import LinearLR
 # Initialize the model
-model = SegmentationVDPModule(learning_rate=0.00002)
+model = SegmentationVDPModule(learning_rate=0.0002)
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
-    input_path="datasets/input/bear", 
-    target_path="datasets/GT/bear",
+    input_path="datasets/input/blackswan", 
+    target_path="datasets/GT/blackswan",
     flow_model=RAFT(RAFTModelSize.LARGE),
-    flow_path="datasets/input/bear_flow",
+    flow_path="datasets/input/blackswan_flow",
     batch_size=2, 
-    num_workers=4
+    num_workers=8
 )
 
 # Initialize the TensorBoard logger

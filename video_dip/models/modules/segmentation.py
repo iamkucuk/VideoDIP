@@ -26,7 +26,7 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.01, 1 , 1, .01, .01]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[.1, .0001 , .0001, .0001, .0001]):
         super().__init__(learning_rate, loss_weights)
 
 
@@ -63,7 +63,7 @@ class SegmentationVDPModule(VDPModule):
 
         # remap alpha output values to 1 and 0's
 
-        # alpha_copy = torch.ones(alpha_output.sh   ape, device = alpha_output.device)        
+        # alpha_copy = torch.ones(alpha_output.shape, device = alpha_output.device)        
         # alpha_copy[alpha_output <= 0.5] = 0
 
 
@@ -140,11 +140,11 @@ class SegmentationVDPModule(VDPModule):
 
 
 
-        flow_sim_loss =self.loss_weights[0] * torch.mean( flow_sim_loss)
-        rec_loss = self.loss_weights[1] * torch.mean( rec_loss)
-        rec_layer_loss = self.loss_weights[2] * torch.mean( rec_layer_loss)
-        warp_loss = self.loss_weights[3] * torch.mean( warp_loss)
-        mask_loss = self.loss_weights[4] * torch.mean( mask_loss)
+        flow_sim_loss =self.loss_weights[0] * torch.sum( flow_sim_loss)
+        rec_loss = self.loss_weights[1] * torch.sum( rec_loss)
+        rec_layer_loss = self.loss_weights[2] * torch.sum( rec_layer_loss)
+        warp_loss = self.loss_weights[3] * torch.sum( warp_loss)
+        mask_loss = self.loss_weights[4] * torch.sum( mask_loss)
 
 
         loss = flow_sim_loss + rec_loss + rec_layer_loss + warp_loss + mask_loss

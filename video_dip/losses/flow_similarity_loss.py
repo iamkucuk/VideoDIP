@@ -34,6 +34,8 @@ class FlowSimilarityLoss(nn.Module):
         
         # their product will be b,i,c,h,w we need to get rid of the i in order to feed to the VGG
         # therefore put that dimension into the batch as well
+        
+
         production = frgb * m
         neg_production = frgb * (1-m)
         VGG.to(m.device)

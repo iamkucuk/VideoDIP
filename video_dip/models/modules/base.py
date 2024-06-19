@@ -197,3 +197,13 @@ class VDPModule(pl.LightningModule):
         
         return ret
             # Implement this
+
+            
+    def test_step(self, batch, batch_idx):        
+        return self.validation_step(batch, batch_idx)
+
+    def test_epoch_end(self, outputs):
+        psnr = self.psnr.compute()
+        ssim = self.ssim.compute()
+
+        return {'psnr_test': psnr, 'ssim_test': ssim}

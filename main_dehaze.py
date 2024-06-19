@@ -40,7 +40,7 @@ wandb_logger.watch(model)
 trainer = pl.Trainer(
     logger=wandb_logger, 
     devices=[1], 
-    max_epochs=100, 
+    max_epochs=10, 
     callbacks=[
         ImageLogger(num_images=1),
         LearningRateMonitor(logging_interval='epoch')  # Log learning rate at every training step
@@ -52,3 +52,7 @@ trainer = pl.Trainer(
 
 # Fit the model
 trainer.fit(model, datamodule=data_module)
+
+results = trainer.test(model, datamodule=data_module)
+
+hebe = 0

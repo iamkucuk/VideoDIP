@@ -117,17 +117,17 @@ class SegmentationVDPModule(VDPModule):
     def training_step(self, batch, batch_idx):
         outputs = self.inference(batch, batch_idx)
         flow_estimate = torchvision.utils.flow_to_image(batch['prev_flow']) / 255.0
-        prev_alpha_output = self(flow=flow_estimate)['alpha']
+        prev_output = self(img=batch['prev_input'])['rgb'].detach()
 
         x = batch["input"]
         x_hat = outputs["reconstructed"]
 
 
 
-        flow_sim_loss = self.flow_similarity_loss(m = prev_alpha_output, frgb = flow_estimate)
+        flow_sim_loss = self.flow_similarity_loss(m = outputs['alpha_output'], frgb = flow_estimate)
         rec_loss = self.reconstruction_loss(x = x, x_hat = x_hat)
         rec_layer_loss = self.rec_layer_loss(m = flow_estimate, x = x, x_hat = x_hat)
-        warp_loss = self.warp_loss(outputs['flow'], prev_alpha_output, outputs['alpha_output'])
+        warp_loss = self.warp_loss(outputs['flow'], prev_output, outputs['alpha_output'])
         mask_loss = self.mask_loss(outputs['alpha_output'])
 
 

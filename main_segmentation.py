@@ -5,9 +5,10 @@ from video_dip.callbacks.image_logger import ImageLogger
 from video_dip.models.modules.segmentation import SegmentationVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
+from video_dip.models.optical_flow.farneback import Farneback
 
 # Initialize the model
-model = SegmentationVDPModule(learning_rate=0.1)
+model = SegmentationVDPModule(learning_rate=0.00002)
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
@@ -28,7 +29,7 @@ wandb_logger.watch(model)
 trainer = pl.Trainer(
     logger=wandb_logger, 
     devices=1, 
-    max_epochs=100, 
+    max_epochs=200, 
     callbacks=[ImageLogger(num_images=1)]
     # sync_batchnorm=True
 )

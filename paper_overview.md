@@ -48,7 +48,7 @@ The goal of the video relighting task is to recover video ${\{(X_t^{out})\}^T_1}
     </figure>
 </center>
 
-$F^{(1)}_{RGB}$, $F^{(1)}_{\alpha}$, $\gamma^{-1}$ are optimized with the following loss objectives(below are general definition of the losses. Each module updates these a little)
+$F^1_{RGB}$, $F^1_{\alpha}$, $\gamma^{-1}$ are optimized with the following loss objectives(below are general definition of the losses. Each module updates these a little)
 
 **Overall Loss Objective:** $L_{final}$ = $\lambda_{rec}$ $L_{rec}$ + $\lambda_{warp}$ $L_{warp}$ (1)
 

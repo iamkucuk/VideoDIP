@@ -43,23 +43,29 @@ class ImageLogger(pl.Callback):
     def log_images_tensorboard(self, logger, inputs, labels, preds_rgb, preds_alpha, preds_reconstructed, flow, stage, global_step):
         import torchvision.utils as vutils
 
-        grid = vutils.make_grid(inputs)
-        logger.experiment.add_image(f'{stage}/inputs', grid, global_step)
+        # Create a grid of input images
+        grid_inputs = vutils.make_grid(inputs)
+        logger.experiment.add_image(f'{stage}/inputs', grid_inputs, global_step)
 
-        grid = vutils.make_grid(labels.unsqueeze(1))  # Assuming labels are single-channel
-        logger.experiment.add_image(f'{stage}/labels', grid, global_step)
+        # Create a grid of label images (assuming labels are single-channel)
+        grid_labels = vutils.make_grid(labels)
+        logger.experiment.add_image(f'{stage}/labels', grid_labels, global_step)
 
-        grid = vutils.make_grid(preds_rgb.unsqueeze(1))  # Assuming preds are single-channel
-        logger.experiment.add_image(f'{stage}/predictions', grid, global_step)
+        # Create a grid of prediction images (assuming preds are single-channel)
+        grid_preds = vutils.make_grid(preds_rgb)
+        logger.experiment.add_image(f'{stage}/predictions_rgb', grid_preds, global_step)
 
-        grid = vutils.make_grid(preds_alpha.unsqueeze(1))  # Assuming preds are single-channel
-        logger.experiment.add_image(f'{stage}/alpha', grid, global_step)
+        # Create a grid of alpha images (assuming preds are single-channel)
+        grid_alpha = vutils.make_grid(preds_alpha)
+        logger.experiment.add_image(f'{stage}/predictions_alpha', grid_alpha, global_step)
 
-        grid = vutils.make_grid(preds_reconstructed)
-        logger.experiment.add_image(f'{stage}/reconstructed', grid, global_step)
+        grid_reconstructed = vutils.make_grid(preds_reconstructed)
+        logger.experiment.add_image(f'{stage}/reconstructed', grid_reconstructed, global_step)
 
-        grid = vutils.make_grid(flow)
-        logger.experiment.add_image(f'{stage}/flow', grid, global_step)
+        grid_flow = vutils.make_grid(flow)
+        logger.experiment.add_image(f'{stage}/flow', grid_flow, global_step)
+
+        
 
     def log_images_wandb(self, logger, inputs, labels, preds_rgb, preds_alpha, preds_reconstructed, flow, stage, global_step):
         import wandb

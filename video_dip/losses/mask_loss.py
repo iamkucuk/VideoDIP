@@ -25,5 +25,5 @@ class MaskLoss(nn.Module):
             torch.Tensor: Mask Loss
         """
         (b,i,h,w) = m.size()
-        return torch.abs(m - 0.5)
+        return torch.sum(torch.abs(m - 0.5)) ** -1
 

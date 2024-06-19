@@ -16,7 +16,9 @@ model = SegmentationVDPModule(
     multi_step_scheduling_kwargs={
         'milestones': [3, 5, 45, 75],
         'gamma': .5,
-    })
+    },
+    warmup=True
+    )
 
 # Initialize the data module
 data_module = VideoDIPDataModule(

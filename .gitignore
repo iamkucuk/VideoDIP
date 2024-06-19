@@ -166,3 +166,4 @@ lightning_logs/
 tb_logs/
 wandb/
 *ckpt
+outdoor_png/

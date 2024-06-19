@@ -26,7 +26,7 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.1, .0001 , .0001, .0001, .0001]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .01, .01]):
         super().__init__(learning_rate, loss_weights)
 
 

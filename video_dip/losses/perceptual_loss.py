@@ -12,6 +12,7 @@ class PerceptualLoss(nn.Module):
     """
     def __init__(self):
         super(PerceptualLoss, self).__init__()
+        self.l1_loss = nn.L1Loss()
 
     def forward(self, x, y):
         """
@@ -30,4 +31,4 @@ class PerceptualLoss(nn.Module):
             VGG.to(x.device)
             x_features = VGG(x)
         y_features = VGG(y)
-        return torch.mean((x_features - y_features) ** 2)
+        return self.l1_loss(x_features, y_features)

@@ -11,18 +11,18 @@ class RelightVDPModule(VDPModule):
         loss_weights (list): The weights for different losses (default: [1, .02]).
     """
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[1, .02]):
+    def __init__(self, learning_rate=5e-5, loss_weights=[1, .02]):
         super().__init__(learning_rate, loss_weights)
 
         # Randomly initialize a parameter named gamma
-        self.gamma_inv = torch.nn.Parameter(torch.tensor(1.0))
+        self.gamma_inv = torch.nn.Parameter(torch.tensor(.5))
 
         self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
 
         self.save_hyperparameters()
 
-    def reconstruction_fn(self, rgb_output, alpha_output):
+    def reconstruction_fn(self, rgb_output, alpha_output, **kwargs):
         """
         Reconstructs the output by performing element-wise multiplication of RGB layers with alpha layers.
 
@@ -33,7 +33,29 @@ class RelightVDPModule(VDPModule):
         Returns:
             torch.Tensor: The reconstructed output tensor.
         """
+        if 'reconstruct' in kwargs and kwargs['reconstruct']=='logarithmic':
+            return self.gamma_inv * (torch.log(alpha_output) + torch.log(rgb_output))
         return alpha_output * rgb_output ** self.gamma_inv
+    
+    def training_step(self, batch, batch_idx):
+        outputs = self.inference(batch, batch_idx, reconstruct='logarithmic')
+
+        prev_output = self(img=batch['prev_input'])['rgb'].detach()
+
+        rec_loss = self.reconstruction_loss(x_hat=outputs['reconstructed'], x=torch.log(batch['input'] + 1e-9))
+        warp_loss = self.warp_loss(
+            flow=outputs['flow'], 
+            prev_out=prev_output, 
+            alpha_out=outputs['alpha_output']
+        )
+
+        loss = self.loss_weights[0] * rec_loss + self.loss_weights[1] * warp_loss
+
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('rec_loss', rec_loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log('warp_loss', warp_loss, on_step=False, on_epoch=True, prog_bar=False)
+
+        return loss
     
     def validation_step(self, batch, batch_idx):
         outputs = super().validation_step(batch, batch_idx)

@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import torch
 import torchvision
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from video_dip.models.unet import UNet
 from video_dip.losses import ReconstructionLoss, OpticalFlowWarpLoss
@@ -31,7 +32,7 @@ class VDPModule(pl.LightningModule):
 
     """
 
-    def __init__(self, learning_rate=2e-3, loss_weights=[1, .02]):
+    def __init__(self, learning_rate=1e-3, loss_weights=[1, .02]):
         super().__init__()
         self.rgb_net = UNet(out_channels=3)  # RGB-Net with 3 input and 3 output channels
         self.alpha_net = UNet(out_channels=1)  # Alpha-Net with 3 input and 1 output channels (for optical flow
@@ -64,7 +65,7 @@ class VDPModule(pl.LightningModule):
 
 
 
-    def reconstruction_fn(self, rgb_output, alpha_output):
+    def reconstruction_fn(self, rgb_output, alpha_output, **kwargs):
         """
         Computes the reconstructed frame.
 
@@ -78,7 +79,7 @@ class VDPModule(pl.LightningModule):
         """
         raise NotImplementedError("The reconstruction function is not implemented.")
 
-    def inference(self, batch, batch_idx):
+    def inference(self, batch, batch_idx, **kwargs):
         """
         Performs inference on a batch of data.
 
@@ -99,7 +100,7 @@ class VDPModule(pl.LightningModule):
         rgb_output = output['rgb']
         alpha_output = output['alpha']
 
-        reconstructed_frame = self.reconstruction_fn(rgb_output, alpha_output)
+        reconstructed_frame = self.reconstruction_fn(rgb_output, alpha_output, **kwargs)
 
         return {
             "input": input_frames,
@@ -151,11 +152,26 @@ class VDPModule(pl.LightningModule):
         
     def configure_optimizers(self):
         """
-        Configures the optimizer.
+        Configures the optimizer and scheduler.
 
         Returns:
-            torch.optim.Optimizer: The optimizer.
+            dict: A dictionary containing the optimizer and the LR scheduler.
 
         """
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        # MultiStep Scheduler
+        milestones = [1, 50]  # Epochs at which to change the learning rate
+        gamma = 0.1  # Factor by which to multiply the learning rate at each milestone
+        
+        multi_step_scheduler = {
+            'scheduler': torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma),
+            'name': 'multi_step_lr',
+            'interval': 'epoch',
+            'frequency': 1
+        }
+        
+        return {
+            'optimizer': optimizer, 
+            'lr_scheduler': multi_step_scheduler
+        }
     

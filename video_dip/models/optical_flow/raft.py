@@ -132,7 +132,7 @@ class RAFT:
         """
         transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Resize((480, 856), antialias=False),
+            torchvision.transforms.Resize((520, 960), antialias=False),
         ])
         if isinstance(image, torch.Tensor):
             transform.transforms = transform.transforms[1:]
@@ -150,7 +150,6 @@ class RAFT:
         """
         # Return np array
         return flow[-1].cpu().numpy().squeeze(0)
-
 # Usage example
 if __name__ == "__main__":
     from PIL import Image

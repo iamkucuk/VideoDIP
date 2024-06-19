@@ -1,12 +1,22 @@
 import pytorch_lightning as pl
 
-from video_dip.data.dataset import VideoDIPDataset
-from video_dip.models.optical_flow import Farneback
+try:
+    from video_dip.data.dataset import VideoDIPDataset
+    from video_dip.models.optical_flow import Farneback
+except ImportError:
+    import sys
+    import os
+    # Add the parent of the parent directory to the path
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
+    
+    from video_dip.data.dataset import VideoDIPDataset
+    from video_dip.models.optical_flow import Farneback
 
 from torch.utils.data import DataLoader
+import os
 
 class VideoDIPDataModule(pl.LightningDataModule):
-    def __init__(self, input_path, batch_size, num_workers, flow_model=None, flow_path=None, target_path=None):
+    def __init__(self, input_path, batch_size, num_workers, flow_path=None, target_path=None):
         """
         Initializes the VideoDIPDataModule.
 
@@ -14,7 +24,6 @@ class VideoDIPDataModule(pl.LightningDataModule):
             input_path (str): Path to the input data.
             batch_size (int): Batch size for data loading.
             num_workers (int): Number of workers for data loading.
-            flow_model (object, optional): Optical flow model. Defaults to Farneback().
             target_path (str, optional): Path to the target data. Defaults to None.
             flow_path (str, optional): Path to the optical flow data. Defaults to None.
         """
@@ -23,13 +32,13 @@ class VideoDIPDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.input_path = input_path
         self.target_path = target_path
-
-        assert (flow_model is not None) or (flow_path is not None), "Either flow_model or flow_path must be provided."
-
-        self.flow_model = flow_model
         self.flow_path = flow_path
+        
+        # assert (flow_model is not None) or (flow_path is not None), "Either flow_model or flow_path must be provided."
 
-    def dump_optical_flow(self, path=None):
+        # self.flow_model = flow_model
+
+    def dump_optical_flow(self, flow_model):
         """
         Dump the optical flow to a folder.
 
@@ -39,11 +48,10 @@ class VideoDIPDataModule(pl.LightningDataModule):
         Returns:
             str: Path to the saved optical flow folder.
         """
-        import os
         from tqdm.auto import tqdm
         import numpy as np
 
-        flow_folder = path if path is not None else self.input_path + '_flow'
+        flow_folder = self.flow_path
         if os.path.exists(flow_folder):
             import shutil
             shutil.rmtree(flow_folder)
@@ -58,9 +66,15 @@ class VideoDIPDataModule(pl.LightningDataModule):
             img1 = dataset[i - 1]['input']
             img2 = dataset[i]['input']
             base_name = dataset[i]['filename']
-            flow = self.flow_model(img1, img2)
+            flow = flow_model(img1, img2)
             # Save the flow as npy
-            np.save(os.path.join(flow_folder, base_name), flow)
+            np.save(os.path.join(flow_folder, base_name), flow.transpose((1, 2, 0)))
+
+            from torchvision.utils import flow_to_image, save_image
+            import torch
+            # Save the flow as image
+            flow_image = flow_to_image(torch.tensor(flow)) / 255.0
+            save_image(flow_image, os.path.join(flow_folder, base_name.replace('.npy', '.png')))
             
         return flow_folder
 
@@ -71,11 +85,8 @@ class VideoDIPDataModule(pl.LightningDataModule):
         Args:
             stage (str, optional): Stage of the training. Defaults to None.
         """
-        flow_folder = self.flow_path if self.flow_path is not None else None
-        if self.flow_model is not None:
-            flow_folder = self.dump_optical_flow(path=flow_folder)
-            del self.flow_model
-        self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=flow_folder)
+        assert os.path.exists(self.flow_path), "The optical flow path does not exist. Did you forget to dump the optical flow before the training loop?"
+        self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=self.flow_path)
 
     def train_dataloader(self):
         """
@@ -96,9 +107,12 @@ class VideoDIPDataModule(pl.LightningDataModule):
         return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
     
 if __name__ == '__main__':
-    module = VideoDIPDataModule("datasets/GT/pair1", batch_size=2, num_workers=8, flow_model=RAFT(RAFTModelSize.LARGE))
-    if os.path.exists("flow_outputs"):
+    from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
+
+    module = VideoDIPDataModule("datasets/input/pair1", batch_size=2, num_workers=8, flow_model=Farneback())#RAFT(RAFTModelSize.LARGE))
+    import os
+    if os.path.exists("flow_outputs_2"):
         import shutil
-        shutil.rmtree("flow_outputs")
-    module.dump_optical_flow('flow_outputs')
+        shutil.rmtree("flow_outputs_2")
+    module.dump_optical_flow('flow_outputs_2')
     

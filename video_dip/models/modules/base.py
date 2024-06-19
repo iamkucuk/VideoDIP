@@ -197,3 +197,7 @@ class VDPModule(pl.LightningModule):
         
         return ret
             # Implement this
+
+            
+    def test_step(self, batch, batch_idx):        
+        return self.validation_step(batch, batch_idx)

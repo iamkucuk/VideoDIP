@@ -71,10 +71,9 @@ class ImageLogger(pl.Callback):
         wandb_inputs = wandb.Image(grid_inputs, caption=f'{stage}/inputs')
 
         # Create a grid of label images (assuming labels are single-channel)
-        if labels:
-            grid_labels = vutils.make_grid(labels)
-            grid_labels = grid_labels.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
-            wandb_labels = wandb.Image(grid_labels, caption=f'{stage}/labels')
+        grid_labels = vutils.make_grid(labels)
+        grid_labels = grid_labels.permute(1, 2, 0).cpu().float().numpy()  # Convert to HWC format
+        wandb_labels = wandb.Image(grid_labels, caption=f'{stage}/labels')
 
         # Create a grid of prediction images (assuming preds are single-channel)
         grid_preds = vutils.make_grid(preds_rgb)

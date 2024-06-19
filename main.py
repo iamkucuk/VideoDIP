@@ -5,17 +5,17 @@ from video_dip.callbacks.image_logger import ImageLogger
 from video_dip.models.modules.relight import RelightVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow import RAFT, RAFTModelSize, Farneback
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import LearningRateMonitor, StochasticWeightAveraging
 
 # Initialize the model
-model = RelightVDPModule(learning_rate=2e-3, loss_weights=[1, .02])
+model = RelightVDPModule(learning_rate=5e-4, loss_weights=[1, .02])
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
-    # input_path="outdoor_png/input/pair76", 
-    # target_path="outdoor_png/GT/pair76",
-    input_path='datasets/input/pair1',
-    target_path='datasets/GT/pair1',
+    input_path="datasets/relighting/outdoor_png/input/pair76", 
+    target_path="datasets/relighting/outdoor_png/GT/pair76",
+    # input_path='datasets/input/pair1',
+    # target_path='datasets/GT/pair1',
     flow_path="flow_outputs",
     batch_size=4, 
     num_workers=4

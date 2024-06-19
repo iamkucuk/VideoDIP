@@ -15,7 +15,7 @@ class RelightVDPModule(VDPModule):
         super().__init__(learning_rate, loss_weights)
 
         # Randomly initialize a parameter named gamma
-        self.gamma_inv = torch.nn.Parameter(torch.tensor(.5))
+        self.gamma_inv = torch.nn.Parameter(torch.tensor(.9))
 
         self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
@@ -38,11 +38,12 @@ class RelightVDPModule(VDPModule):
         return alpha_output * rgb_output ** self.gamma_inv
     
     def training_step(self, batch, batch_idx):
-        outputs = self.inference(batch, batch_idx, reconstruct='logarithmic')
+        outputs = self.inference(batch, batch_idx)#, reconstruct='logarithmic')
 
         prev_output = self(img=batch['prev_input'])['rgb'].detach()
 
-        rec_loss = self.reconstruction_loss(x_hat=outputs['reconstructed'], x=torch.log(batch['input'] + 1e-9))
+        # rec_loss = self.reconstruction_loss(x_hat=outputs['reconstructed'], x=torch.log(batch['input'] + 1e-9))
+        rec_loss = self.reconstruction_loss(x_hat=outputs['reconstructed'], x=batch['input'])
         warp_loss = self.warp_loss(
             flow=outputs['flow'], 
             prev_out=prev_output, 
@@ -51,9 +52,9 @@ class RelightVDPModule(VDPModule):
 
         loss = self.loss_weights[0] * rec_loss + self.loss_weights[1] * warp_loss
 
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('rec_loss', rec_loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log('warp_loss', warp_loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, batch_size=4)
+        self.log('rec_loss', rec_loss, on_step=False, on_epoch=True, prog_bar=False, batch_size=4)
+        self.log('warp_loss', warp_loss, on_step=False, on_epoch=True, prog_bar=False, batch_size=4)
 
         return loss
     
@@ -67,9 +68,9 @@ class RelightVDPModule(VDPModule):
         self.psnr(rgb_output, gt)
         self.ssim(rgb_output, gt)
 
-        self.log('psnr', self.psnr, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('gamma_inv', self.gamma_inv, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('psnr', self.psnr, on_step=False, on_epoch=True, prog_bar=True, batch_size=4)
+        self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True, batch_size=4)
+        self.log('gamma_inv', self.gamma_inv, on_step=False, on_epoch=True, prog_bar=True, batch_size=4)
 
         return outputs
     

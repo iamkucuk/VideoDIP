@@ -160,8 +160,8 @@ class VDPModule(pl.LightningModule):
         """
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         # MultiStep Scheduler
-        milestones = [1, 50]  # Epochs at which to change the learning rate
-        gamma = 0.1  # Factor by which to multiply the learning rate at each milestone
+        milestones = [3, 5 , 45, 75]  # Epochs at which to change the learning rate
+        gamma = 0.1 ** (1/4)  # Factor by which to multiply the learning rate at each milestone
         
         multi_step_scheduler = {
             'scheduler': torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma),

@@ -12,7 +12,7 @@ Paper Authors:
 Project Authors: Alper Bahçekapılı, Furkan Küçük
 
 
-Paper Summary: Paper is a deep learning framework to edit videos without supervision. Namely following three points are adressed in the paper:
+Paper Summary: Paper is a deep learning framework to edit videos without supervision. Namely following three downstream tasks are adressed in the paper:
 
 * Video Relighting
 * Video Dehazing

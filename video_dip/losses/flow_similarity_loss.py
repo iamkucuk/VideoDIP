@@ -37,7 +37,7 @@ class FlowSimilarityLoss(nn.Module):
         production = frgb * m
         neg_production = frgb * (1-m)
         VGG.to(m.device)
-        product = VGG(production.view(b*i, c,h,w))
-        neg_product = VGG(neg_production.view(b*i, c,h,w))
+        product = VGG(production)
+        neg_product = VGG(neg_production)
         lfsim = (product * neg_product) / (torch.norm(product) * torch.norm(neg_product))
         return lfsim

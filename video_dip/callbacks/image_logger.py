@@ -96,7 +96,7 @@ class ImageLogger(pl.Callback):
         # Log the images to wandb
         logger.experiment.log({
             f'{stage}/inputs': wandb_inputs,
-            f'{stage}/labels': wandb_labels if labels else None,
+            f'{stage}/labels': wandb_labels,
             f'{stage}/predictions_rgb': wandb_preds,
             f'{stage}/predictions_alpha': wandb_alpha,
             f'{stage}/reconstructed': wandb_reconstructed,

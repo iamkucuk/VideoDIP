@@ -137,26 +137,25 @@ class VideoDIPDataset(Dataset):
 
         return transforms.Compose([
             transforms.ToTensor(),
+            transforms.Resize((480, 856)),
         ])
 
     def __len__(self):
         if self.optical_flow_frames is None:
             return len(self.input_frames)
-        return len(self.input_frames) - 2 # Omit the first two frames
+        return len(self.input_frames) - 1 # Omit the first two frames
     
     def __getitem__(self, idx):
         datum = {}
         if self.optical_flow_frames is not None:
-            idx += 2 # Skip the first two frames
-            # flow_frame = self._load_image(self.optical_flow_frames[idx])
-            # prev_flow_frame = self._load_image(self.optical_flow_frames[idx - 1])
-            # datum["flow"] = self.transforms(flow_frame)
-            # datum["prev_flow"] = self.transforms(prev_flow_frame)
-            datum['flow'] = torch.tensor(np.load(self.optical_flow_frames[idx - 1]))
-            datum['prev_flow'] = torch.tensor(np.load(self.optical_flow_frames[idx - 2]))
+            idx += 1 # Skip the first frame
+            datum['flow'] = self.transforms(np.load(self.optical_flow_frames[idx - 1]))
 
-        frame = self._load_image(self.input_frames[idx])
-        datum.update({"input": self.transforms(frame), "filename": os.path.basename(self.input_frames[idx])})
+        datum.update({
+            "input": self.transforms(self._load_image(self.input_frames[idx])), 
+            "filename": os.path.basename(self.input_frames[idx]),
+            "prev_input": self.transforms(self._load_image(self.input_frames[idx - 1])) if idx > 0 else ""
+        })
         if self.target_frames is not None:
             target_frame = self._load_image(self.target_frames[idx])
             datum["target"] = self.transforms(target_frame)

@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 import os
 
 class VideoDIPDataModule(pl.LightningDataModule):
-    def __init__(self, input_path, batch_size, num_workers, flow_path=None, target_path=None):
+    def __init__(self, input_path, batch_size, num_workers, flow_path=None, target_path=None, airlight_est_path=None):
         """
         Initializes the VideoDIPDataModule.
 
@@ -26,6 +26,7 @@ class VideoDIPDataModule(pl.LightningDataModule):
             num_workers (int): Number of workers for data loading.
             target_path (str, optional): Path to the target data. Defaults to None.
             flow_path (str, optional): Path to the optical flow data. Defaults to None.
+            airlight_est_path (str, optional): Path to the airlight estimation data. Defaults to None.
         """
         super().__init__()
         self.batch_size = batch_size
@@ -33,10 +34,8 @@ class VideoDIPDataModule(pl.LightningDataModule):
         self.input_path = input_path
         self.target_path = target_path
         self.flow_path = flow_path
-        
-        # assert (flow_model is not None) or (flow_path is not None), "Either flow_model or flow_path must be provided."
+        self.airlight_est_path = airlight_est_path
 
-        # self.flow_model = flow_model
 
     def dump_optical_flow(self, flow_model):
         """
@@ -86,7 +85,7 @@ class VideoDIPDataModule(pl.LightningDataModule):
             stage (str, optional): Stage of the training. Defaults to None.
         """
         assert os.path.exists(self.flow_path), "The optical flow path does not exist. Did you forget to dump the optical flow before the training loop?"
-        self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=self.flow_path)
+        self.dataset = VideoDIPDataset(input_path=self.input_path, target_path=self.target_path, flow_path=self.flow_path, airlight_est_path=self.airlight_est_path)
 
     def train_dataloader(self):
         """
@@ -103,6 +102,15 @@ class VideoDIPDataModule(pl.LightningDataModule):
 
         Returns:
             torch.utils.data.DataLoader: Data loader for validation.
+        """
+        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+    
+    def test_dataloader(self):
+        """
+        Returns the data loader for testing.
+
+        Returns:
+            torch.utils.data.DataLoader: Data loader for testing.
         """
         return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
     

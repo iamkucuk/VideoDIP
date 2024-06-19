@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from glob import glob
 from PIL import Image
 
-IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif']
+IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.JPG', '.JPEG', '.PNG', '.PPM', '.BMP', '.PGM', '.TIF']
 VID_EXTENSIONS = ['.mp4', '.avi', '.mov', '.mkv']
 
 class VideoDIPDataset(Dataset):
@@ -29,7 +29,7 @@ class VideoDIPDataset(Dataset):
         default_transforms: Returns the default transforms to be applied to the frames or images.
     """
 
-    def __init__(self, input_path, target_path = None, flow_path = None, transforms=None) -> None:
+    def __init__(self, input_path, target_path = None, flow_path = None, transforms=None, airlight_est_path=None) -> None:
         assert input_path is not None, "Path to video file or images folder is required"
         assert isinstance(input_path, str), "Path must be a string"
 
@@ -38,8 +38,33 @@ class VideoDIPDataset(Dataset):
         self.optical_flow_frames = glob(os.path.join(flow_path, "*.npy")) if flow_path is not None else None
         if self.optical_flow_frames is not None:
             self.optical_flow_frames.sort()
+        self.airlight_estimations = self._get_airlight_estimations(airlight_est_path) if airlight_est_path is not None else None
 
         self.transforms = transforms if transforms is not None else self.default_transforms()
+
+    def _get_airlight_estimations(self, airlight_est):
+        """
+        Returns the paths to the airlight estimations in the specified directory.
+
+        Args:
+            airlight_est (str): Path to the directory containing the airlight estimations.
+
+        Returns:
+            list: List of paths to the airlight estimations.
+        """
+
+        if not os.path.exists(airlight_est):
+            raise FileNotFoundError(f"Path {airlight_est} does not exist")
+        
+        airlight_estimations = glob(os.path.join(airlight_est, "*.csv"))
+        airlight_estimations.sort()
+
+        from pathlib import Path
+        # Check if the files match with the input frames
+        for frame, airlight in zip(self.input_frames, airlight_estimations):
+            assert os.path.basename(airlight).startswith(Path(frame).stem), f"Air-light estimation file {airlight} does not match with the input frame {frame}"
+
+        return airlight_estimations
 
     def _get_frames(self, path):
         """
@@ -159,30 +184,29 @@ class VideoDIPDataset(Dataset):
         if self.target_frames is not None:
             target_frame = self._load_image(self.target_frames[idx])
             datum["target"] = self.transforms(target_frame)
+
+        if self.airlight_estimations is not None:
+            datum["airlight"] = torch.tensor(np.genfromtxt(self.airlight_estimations[idx], delimiter=',')).float()
+
         return datum
 
 if __name__ == '__main__':
     from torch.utils.data import DataLoader
     import PIL
-    dipdataset = VideoDIPDataset("video_dip/data/sora.mp4")
-    data_loader = DataLoader(dipdataset, batch_size=1, num_workers=8)
-    img = next(iter(dipdataset))['input']
-
-    print(img.shape)
+    dip_dataset = VideoDIPDataset(
+        "datasets/dehazing/hazy/C005", 
+        "datasets/dehazing/gt/C005", 
+        "flow_outputs",
+        airlight_est_path="datasets/dehazing/processed/C005"
+    )
     
-    PIL.Image.fromarray((img.permute(1, 2, 0).numpy() * 255).astype('uint8')).show()
+    data_loader = DataLoader(dip_dataset, batch_size=2, num_workers=8)
 
-    dipdataset = VideoDIPDataset("datasets/input/pair1", "datasets/GT/pair1")
-    data_loader = DataLoader(dipdataset, batch_size=1, num_workers=8)
-    batch = next(iter(dipdataset))
-    
-    img = batch['input']
-    print(img.shape)
+    batch = next(iter(data_loader))
+    print(batch.keys())
 
-    PIL.Image.fromarray((img.permute(1, 2, 0).numpy() * 255).astype('uint8')).show()
-
-    img = batch['target']
-    print(img.shape)
-
-    PIL.Image.fromarray((img.permute(1, 2, 0).numpy() * 255).astype('uint8')).show()
-
+    print(batch['input'].shape)
+    print(batch['target'].shape)
+    print(batch['flow'].shape)
+    print(batch['airlight'].shape)
+    print(batch['filename'])

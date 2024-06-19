@@ -2,28 +2,28 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
 from video_dip.callbacks.image_logger import ImageLogger
-from video_dip.models.modules.relight import RelightVDPModule
+from video_dip.models.modules import DehazeVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow import RAFT, RAFTModelSize, Farneback
 from pytorch_lightning.callbacks import LearningRateMonitor, StochasticWeightAveraging
 
 # Initialize the model
-model = RelightVDPModule(
-    learning_rate=5e-4, 
+model = DehazeVDPModule(
+    learning_rate=2e-3, 
     loss_weights=[1, .02],
     multi_step_scheduling_kwargs={
-        'milestones': [3, 5, 45, 75],
+        'milestones': [5, 15, 45, 75],
         'gamma': .5,
-    }
+    },
+    warmup=True
 )
 
 # Initialize the data module
 data_module = VideoDIPDataModule(
-    input_path="datasets/relighting/outdoor_png/input/pair76", 
-    target_path="datasets/relighting/outdoor_png/GT/pair76",
-    # input_path='datasets/input/pair1',
-    # target_path='datasets/GT/pair1',
+    input_path="datasets/dehazing/hazy/C005", 
+    target_path="datasets/dehazing/gt/C005",
     flow_path="flow_outputs",
+    airlight_est_path="datasets/dehazing/processed/C005",
     batch_size=4, 
     num_workers=4
 )
@@ -32,8 +32,8 @@ data_module = VideoDIPDataModule(
 # raise NotImplementedError
 
 # Initialize the TensorBoard logger
-tensorboard_logger = TensorBoardLogger("tb_logs", name="video_dip_relight")
-wandb_logger = WandbLogger(project="video_dip_relight")
+tensorboard_logger = TensorBoardLogger("tb_logs", name="video_dip_dehaze")
+wandb_logger = WandbLogger(project="video_dip_dehaze")
 wandb_logger.watch(model)
 
 # Initialize the trainer with the logger
@@ -52,7 +52,3 @@ trainer = pl.Trainer(
 
 # Fit the model
 trainer.fit(model, datamodule=data_module)
-
-results = trainer.test(model, datamodule=data_module)
-
-hebe = 0

@@ -54,18 +54,18 @@ $F^{(1)}_{RGB}$, $F^{(1)}_{\alpha}$, $\gamma^{-1}$ are optimized with the follow
 
 **Reconstruction Loss:** $\sum_t ||X_t - \hat{X_t}||_1 + || \phi (X_t) - \phi (\hat{X_t})||_1$ (2)
 
-**Optical Flow Warp Loss** $\sum_t || F_{t-1 \rightarrow t} (X_{t-1}^o) -  X_{t}^o  || $ (3)
+**Optical Flow Warp Loss** $\sum_t || F_{t-1 \rightarrow t} (X_{t-1}^o) -  X_{t}^o  ||$ (3)
 
 
 
 Relit video is reconstructed with the following equation.
 
-$X_t^{out} = A_t \odot  (X_t^{in})^{\gamma}$,  $\forall t \in (1,T] $ (4)
+$X_t^{out} = A_t \odot  (X_t^{in})^{\gamma}$,  $\forall t \in (1,T]$ (4)
 
 
 For the VDP framework authors update eq. 4 as follows
 
-$log(X_t^{in}) = \gamma^{-1}(log(1/A_t)+log(x_t^{out}))$, $\forall t \in (1,T] $ (5)
+$log(X_t^{in}) = \gamma^{-1}(log(1/A_t)+log(x_t^{out}))$, $\forall t \in (1,T]$ (5)
 
 
 
@@ -113,7 +113,7 @@ However video decomposition problem is ill-posed and loss equation (1) is not st
 
 **Flow Similarity Loss:** This loss ensures motion of different layers are uncorrelated. They define the loss as cosine similarity between the VGG embeddings of the masked flow-RGB of layer i with the rest of the layers (for L=2 one layer is reverse of the other)  Here $\phi$ denotes the VGG network. $F^{RGB}$ is RGB image of flow estimate from frame t-1 to t.
 
-$ L_{\text{sim}} = \frac{\phi(M \circ F^{\text{RGB}}) \cdot \phi((1 - M) \circ F^{\text{RGB}})}{\|\phi(M \circ F^{\text{RGB}})\| \| \phi((1 - M) \circ F^{\text{RGB}})\|} $ (9)
+$L_{\text{sim}} = \frac{\phi(M \circ F^{\text{RGB}}) \cdot \phi((1 - M) \circ F^{\text{RGB}})}{\|\phi(M \circ F^{\text{RGB}})\| \| \phi((1 - M) \circ F^{\text{RGB}})\|}$ (9)
 
 
 **Mask Loss:** This loss enforces the binarization of the generated layer mask. [2]

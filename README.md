@@ -10,7 +10,7 @@ Below are the results before and after applying the relighting task:
 
 | Before Relighting | After Relighting |
 |-------------------|------------------|
-| ![](relight_in.png) | ![](relight_out.png) |
+| ![](figures/relight_in.png) | ![](figures/relight_out.png) |
 
 ## Dehazing Results
 
@@ -18,7 +18,7 @@ Below are the results before and after applying the dehazing task:
 
 | Before Dehazing | After Dehazing |
 |-----------------|----------------|
-| ![](dehaze_in.png) | ![](dehaze_out.png) |
+| ![](figures/dehaze_in.png) | ![](figures/dehaze_out.png) |
 
 
 

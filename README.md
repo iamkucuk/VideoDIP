@@ -1,4 +1,4 @@
-# [Video Decomposition Prior: Editing Videos Layer by Layer](https://openreview.net/pdf?id=nfMyERXNru)
+Sem# [Video Decomposition Prior: Editing Videos Layer by Layer](https://openreview.net/pdf?id=nfMyERXNru)
 
 Gaurav Shrivastava, Ser-Nam Lim, Abhinav Shrivastava
 
@@ -19,6 +19,19 @@ Below are the results before and after applying the dehazing task:
 | Before Dehazing | After Dehazing |
 |-----------------|----------------|
 | ![](dehaze_in.png) | ![](dehaze_out.png) |
+
+
+
+## Segmentation Results
+
+Below are the results before and after applying the segmentation task:
+
+| Input Image | Segmentation Map |
+|-----------------|----------------|
+| ![](figures/blackswan_reconstruction.png) | ![](figures/segmentation_map_good.png) |
+
+
+
 
 This folder provides a re-implementation of this paper in PyTorch, developed as part of the course METU CENG 796 - Deep Generative Models. The re-implementation is provided by:
 * Furkan Küçük, kucuk.furkan@metu.edu.tr

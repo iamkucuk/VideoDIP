@@ -1,8 +1,30 @@
-# VideoDIP
+# [Video Decomposition Prior: Editing Videos Layer by Layer](https://openreview.net/pdf?id=nfMyERXNru)
 
-## Video Decomposition Prior Framework
+Gaurav Shrivastava, Ser-Nam Lim, Abhinav Shrivastava
 
-This repository contains the code for the paper "Video Decomposition Prior: Editing Videos Layer by Layer" by Gaurav Shrivastava, Ser-Nam Lim, and Abhinav Shrivastava, presented at ICLR 2024.
+*ICLR 2024*
+
+## Relighting Results
+
+Below are the results before and after applying the relighting task:
+
+| Before Relighting | After Relighting |
+|-------------------|------------------|
+| ![](relight_in.png) | ![](relight_out.png) |
+
+## Dehazing Results
+
+Below are the results before and after applying the dehazing task:
+
+| Before Dehazing | After Dehazing |
+|-----------------|----------------|
+| ![](dehaze_in.png) | ![](dehaze_out.png) |
+
+This folder provides a re-implementation of this paper in PyTorch, developed as part of the course METU CENG 796 - Deep Generative Models. The re-implementation is provided by:
+* Furkan Küçük, kucuk.furkan@metu.edu.tr
+* Alper Bahçekapılı, alper.bahcekapili@metu.edu.tr
+
+Please see the jupyter notebook file [main.ipynb](main.ipynb) for a summary of paper, the implementation notes and our experimental results.
 
 ## Abstract
 

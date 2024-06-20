@@ -1,8 +1,13 @@
-# VideoDIP Project README
+# VideoDIP
 
-## Introduction
+## Video Decomposition Prior Framework
 
-This repository contains the code for the Video Deep Image Prior (VideoDIP) project. The goal of this project is to enhance video processing tasks such as dehazing, relighting, and segmentation using deep learning models. The models are trained and tested using PyTorch Lightning, providing a flexible and efficient framework for model development and experimentation.
+This repository contains the code for the paper "Video Decomposition Prior: Editing Videos Layer by Layer" by Gaurav Shrivastava, Ser-Nam Lim, and Abhinav Shrivastava, presented at ICLR 2024.
+
+## Abstract
+
+In the evolving landscape of video editing methodologies, a majority of deep learning techniques are often reliant on extensive datasets of observed input and ground truth sequence pairs for optimal performance. Such reliance often falters when acquiring data becomes challenging, especially in tasks like video dehazing and relighting, where replicating identical motions and camera angles in both corrupted and ground truth sequences is complicated. Moreover, these conventional methodologies perform best when the test distribution closely mirrors the training distribution. Recognizing these challenges, this paper introduces a novel video decomposition prior ‘VDP’ framework which derives inspiration from professional video editing practices. Our methodology does not mandate task-specific external data corpus collection, instead pivots to utilizing the motion and appearance of the input video. VDP framework decomposes a video sequence into a set of multiple RGB layers and associated opacity levels. These set of layers are then manipulated individually to obtain the desired results. We addresses tasks such as video object segmentation, dehazing, and relighting. Moreover, we introduce a novel logarithmic video decomposition formulation for video relighting tasks, setting a new benchmark over the existing methodologies. We evaluate our approach on standard video datasets like DAVIS, REVIDE, & SDSD and show qualitative results on a diverse array of internet videos.
+
 
 ## Contents
 
@@ -261,12 +266,18 @@ The outputs of the project include:
 
 ## Acknowledgments
 
-This project is developed by Furkan & Alper. It uses PyTorch Lightning for model training and evaluation, and various deep learning models for video processing tasks. Special thanks to the authors of the [Dehazing-Airlight-estimation](https://github.com/iamkucuk/Dehazing-Airlight-estimation) repository for providing the airlight estimation tool.
+This project is developed by Furkan & Alper. It uses PyTorch Lightning for model training and evaluation. Here're the list of the models and papers that are used:
+
+- “Video Decomposition Prior: Editing Videos Layer by Layer”, The Twelfth International Conference on Learning Representations, Jun. 20, 2024. https://openreview.net/forum?id=nfMyERXNru
+
+- Bahat, Y., & Irani, M. (2016). Blind dehazing using internal patch recurrence. In 2016 IEEE International Conference on Computational Photography, ICCP 2016 - Proceedings Article 7492870 https://doi.org/10.1109/ICCPHOT.2016.7492870
+
+- https://github.com/dvlab-research/SDSD
+
+- https://github.com/BookerDeWitt/REVIDE_Dataset
 
 ## License
 
-This project is licensed under the GNU General Public License v3 or later (GPLv3+).
-
-For any issues or questions, please contact the authors.
+This project is licensed under the MIT License. See the LICENSE file for more details.
 
 ---

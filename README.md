@@ -58,7 +58,7 @@ To set up the environment for this project, follow these steps:
 2. Create the Conda environment:
     ```bash
     conda env create -f env.yml
-    conda activate vision
+    conda activate video_dip
     ```
 
 3. Download the data and models:
@@ -74,6 +74,14 @@ To set up the environment for this project, follow these steps:
     ```
 
 ## Usage
+
+### Viewing the previous results
+
+Download script will download the pretrained models and the results of the previous runs, as tensorboard logs within `tb_logs` folder. You can view the results by running the following command:
+
+```bash
+tensorboard --logdir tb_logs
+```
 
 ### Dehazing
 

@@ -2,21 +2,20 @@ import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from video_dip.callbacks.image_logger import ImageLogger
-from video_dip.models.modules import DehazeVDPModule
+from video_dip.models.modules.relight import RelightVDPModule
 from video_dip.data.datamodule import VideoDIPDataModule
 from video_dip.models.optical_flow import RAFT, RAFTModelSize, Farneback
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
 
-def dehaze(
+def relight(
     learning_rate=2e-3,
     loss_weights=[1, .02],
     milestones=[5, 15, 45, 75],
     gamma=.5,
     warmup=True,
-    input_path="datasets/dehazing/hazy/C005",
-    target_path="datasets/dehazing/gt/C005",
+    input_path="datasets/relighting/outdoor_png/input/pair76",
+    target_path="datasets/relighting/outdoor_png/GT/pair76",
     flow_path="flow_outputs",
-    airlight_est_path="datasets/dehazing/processed/C005",
     batch_size=4,
     num_workers=4,
     max_epochs=100,
@@ -26,7 +25,7 @@ def dehaze(
     early_stopping=True
 ):
     # Initialize the model
-    model = DehazeVDPModule(
+    model = RelightVDPModule(
         learning_rate=learning_rate, 
         loss_weights=loss_weights,
         multi_step_scheduling_kwargs={
@@ -41,7 +40,6 @@ def dehaze(
         input_path=input_path, 
         target_path=target_path,
         flow_path=flow_path,
-        airlight_est_path=airlight_est_path,
         batch_size=batch_size, 
         num_workers=num_workers
     )
@@ -55,13 +53,13 @@ def dehaze(
 
     # Initialize the loggers
     if logger == 'tb':
-        logger = TensorBoardLogger("tb_logs", name=f"video_dip_dehaze_{input_path.split('/')[-1]}")
+        logger = TensorBoardLogger("tb_logs", name=f"video_dip_relight_{input_path.split('/')[-1]}")
     elif logger == 'wandb':
-        logger = WandbLogger(project="video_dip_dehaze")
+        logger = WandbLogger(project="video_dip_relight")
         logger.watch(model)
     else:
         raise ValueError(f"Invalid logger: {logger}")
-
+    
     callbacks = [
         ImageLogger(num_images=1),
         LearningRateMonitor(logging_interval='epoch')  # Log learning rate at every training step
@@ -85,36 +83,33 @@ def dehaze(
     return trainer.test(model, datamodule=data_module)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Dehaze video using DehazeVDPModule.")
+    parser = argparse.ArgumentParser(description="Relight video using RelightVDPModule.")
     parser.add_argument("--learning_rate", type=float, default=2e-3, help="Learning rate for the model.")
     parser.add_argument("--loss_weights", nargs=2, type=float, default=[1, .02], help="Loss weights for the model.")
     parser.add_argument("--milestones", nargs='+', type=int, default=[5, 15, 45, 75], help="Milestones for learning rate scheduling.")
     parser.add_argument("--gamma", type=float, default=.5, help="Gamma value for learning rate scheduling.")
-    parser.add_argument("--warmup", type=bool, default=True, help="Warmup flag for the model.")
-    parser.add_argument("--input_path", type=str, default="datasets/dehazing/hazy/C005", help="Input path for the hazy videos.")
-    parser.add_argument("--target_path", type=str, default="datasets/dehazing/gt/C005", help="Target path for the ground truth videos.")
+    parser.add_argument("--input_path", type=str, default="datasets/relight/input/pair76", help="Input path for the relighting videos.")
+    parser.add_argument("--target_path", type=str, default="datasets/relight/GT/pair76", help="Target path for the ground truth videos.")
     parser.add_argument("--flow_path", type=str, default="flow_outputs", help="Path to save the optical flow outputs.")
-    parser.add_argument("--airlight_est_path", type=str, default="datasets/dehazing/processed/C005", help="Path for airlight estimation data.")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for the data loader.")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader.")
     parser.add_argument("--max_epochs", type=int, default=100, help="Maximum number of epochs for training.")
     parser.add_argument("--devices", nargs='+', type=int, default=[1], help="Devices to use for training.")
     parser.add_argument("--logger", type=str, choices=['tb', 'wandb'], default='tb', help="Logger to use for training.")
     parser.add_argument("--flow_model", type=str, choices=['raft', 'farneback'], default='raft', help="Optical flow model to use.")
+    parser.add_argument("--warmup", type=bool, default=True, help="Warmup flag for the model.")
     parser.add_argument("--early_stopping", type=bool, default=True, help="Early stopping flag for the model.")
 
     args = parser.parse_args()
     
-    dehaze(
+    relight(
         learning_rate=args.learning_rate,
         loss_weights=args.loss_weights,
         milestones=args.milestones,
         gamma=args.gamma,
-        warmup=args.warmup,
         input_path=args.input_path,
         target_path=args.target_path,
         flow_path=args.flow_path,
-        airlight_est_path=args.airlight_est_path,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         max_epochs=args.max_epochs,

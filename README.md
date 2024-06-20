@@ -51,7 +51,7 @@ To set up the environment for this project, follow these steps:
 
 1. Clone the repository:
     ```bash
-    git clone http://github.com/yourusername/video_dip.git
+    git clone https://github.com/iamkucuk/VideoDIP.git
     cd video_dip
     ```
 

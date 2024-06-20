@@ -19,7 +19,7 @@ def segment(
     batch_size=2,
     num_workers=8,
     max_epochs=100,
-    devices=[1],
+    devices=[0],
     logger='tb'
 ):
     # Initialize the model
@@ -41,6 +41,8 @@ def segment(
         batch_size=batch_size, 
         num_workers=num_workers
     )
+
+    data_module.dump_optical_flow(flow_model=RAFT(RAFTModelSize.LARGE))
 
     # Initialize the loggers
     if logger == 'tb':
@@ -75,14 +77,14 @@ if __name__ == '__main__':
     parser.add_argument("--milestones", nargs='+', type=int, default=[5, 15, 45, 75], help="Milestones for learning rate scheduling.")
     parser.add_argument("--gamma", type=float, default=.5, help="Gamma value for learning rate scheduling.")
     parser.add_argument("--warmup", type=bool, default=True, help="Warmup flag for the model.")
-    parser.add_argument("--input_path", type=str, default="datasets/input/bear", help="Input path for the segmentation videos.")
-    parser.add_argument("--target_path", type=str, default="datasets/GT/pair1", help="Target path for the ground truth videos.")
-    parser.add_argument("--flow_path", type=str, default="flow_outputs", help="Path to save the optical flow outputs.")
+    parser.add_argument("--input_path", type=str, default="datasets/input/blackswan", help="Input path for the segmentation videos.")
+    parser.add_argument("--target_path", type=str, default="datasets/GT/blackswan", help="Target path for the ground truth videos.")
+    parser.add_argument("--flow_path", type=str, default="datasets/input/blackswan_flow", help="Path to save the optical flow outputs.")
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for the data loader.")
     parser.add_argument("--num_workers", type=int, default=8, help="Number of workers for the data loader.")
     parser.add_argument("--max_epochs", type=int, default=100, help="Maximum number of epochs for training.")
-    parser.add_argument("--devices", nargs='+', type=int, default=[1], help="Devices to use for training.")
-    parser.add_argument("--logger", type=str, choices=['tb', 'wandb'], default='tb', help="Logger to use for training.")
+    parser.add_argument("--devices", nargs='+', type=int, default=[0], help="Devices to use for training.")
+    parser.add_argument("--logger", type=str, choices=['tb', 'wandb'], default='wandb', help="Logger to use for training.")
 
     args = parser.parse_args()
     

@@ -151,6 +151,28 @@ datasets/
     │       └── ...
 ```
 
+
+#### Segmentation
+```text
+datasets/
+└── segmentation/
+    ├── davis/
+    │   ├── input/
+    │   │   ├── bear/
+    │   │   │   ├── 0001.jpg
+    │   │   │   ├── 0002.jpg
+    │   │   │   └── ...
+    │   │   └── ...
+    │   └── GT/
+    │       ├── bear/
+    │       │   ├── 0001.jpg
+    │       │   ├── 0002.jpg
+    │       │   └── ...
+    │       └── ...
+```
+
+
+
 ## Workflow
 
 The workflow of the project involves the following steps:
@@ -161,13 +183,13 @@ The workflow of the project involves the following steps:
 
 3. **Benchmarking**: Use the benchmarking scripts (`benchmark_relight.py`, `benchmark_dehaze.py`, `benchmark_segmentation.py`) to evaluate the performance of the models across multiple sub-folders in the datasets.
 
-4. **Evaluation**: The metrics (PSNR, SSIM) are logged during training and evaluation. The results are logged using the user's preferred logger, either TensorBoard or Weights & Biases.
+4. **Evaluation**: The metrics (PSNR, SSIM, IoU) are logged during training and evaluation. The results are logged using the user's preferred logger, either TensorBoard or Weights & Biases.
 
 ## Outputs
 
 The outputs of the project include:
 
-- **Metrics**: Performance metrics such as PSNR and SSIM are logged and saved.
+- **Metrics**: Performance metrics such as PSNR, SSIM and IoU are logged and saved.
 - **Processed Videos/Images**: The processed videos or images are logged using the user's preferred logger (TensorBoard or Weights & Biases).
 - **Model Checkpoints**: Model checkpoints are saved during training, allowing you to resume training or use the trained models for inference.
 
@@ -221,7 +243,7 @@ The outputs of the project include:
 - **OpticalFlowWarpLoss**: Ensures temporal coherence by warping images according to the optical flow.
 - **FlowSimilarityLoss**: Measures the similarity between motion tensor and RGB flow.
 - **ReconstructionLayerLoss**: Computes reconstruction loss based on intermediate layers.
-- **MaskLoss**: Penalizes deviation of mask values from 0.5.
+- **MaskLoss**: Ensures binarized mask predictions.
 
 ### video_dip/metrics
 
@@ -229,6 +251,7 @@ The outputs of the project include:
 
 - **PNSR**: Computes the Peak Signal-to-Noise Ratio (PSNR) between original and reconstructed frames.
 - **SSIM**: Computes the Structural Similarity Index Measure (SSIM) between original and reconstructed frames.
+- **IoU**: Computes the Intersection over Union Measure (IoU) between original and predicted segmentation.
 
 ### video_dip/callbacks
 

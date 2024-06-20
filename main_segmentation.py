@@ -43,7 +43,7 @@ def segment(
     )
 
     data_module.dump_optical_flow(flow_model=RAFT(RAFTModelSize.LARGE))
-
+ 
     # Initialize the loggers
     if logger == 'tb':
         logger = TensorBoardLogger("tb_logs", name="my_model")

@@ -35,3 +35,5 @@ for file in tb_logs/*.zip; do
     unzip "$file" -d tb_logs/
     rm "$file"
 done
+
+gdown --folder https://drive.google.com/drive/folders/1VuSnPkhwwq3Y-rpPhRxCOe4YX03zt8Cj?usp=sharing

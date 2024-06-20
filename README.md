@@ -61,9 +61,14 @@ To set up the environment for this project, follow these steps:
     conda activate vision
     ```
 
+3. Download the data and models:
+    ```bash
+    bash download_data.sh
+    ```
+
 ### Optional step
 
-3. Install the project:
+4. Install the project:
     ```bash
     pip install -e .
     ```

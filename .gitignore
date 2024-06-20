@@ -168,3 +168,5 @@ wandb/
 *ckpt
 outdoor_png/
 .vscode/
+flow_outputs_dehaze/
+flow_outputs_relight/

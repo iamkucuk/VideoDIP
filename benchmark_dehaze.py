@@ -24,8 +24,8 @@ def benchmark_dehaze(dataset_path, **dehaze_kwargs):
 
         # Run the dehazing script for each sub-folder
         metrics = dehaze(
-            input_path=sub_folder,
-            target_path=sub_folder.replace('gt', 'hazy'),
+            input_path=sub_folder.replace('gt', 'hazy'),
+            target_path=sub_folder,
             airlight_est_path=sub_folder.replace('gt', 'processed'),
             **dehaze_kwargs
         )
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument("--milestones", nargs='+', type=int, default=[5, 15, 45, 75], help="Milestones for learning rate scheduling.")
     parser.add_argument("--gamma", type=float, default=.5, help="Gamma value for learning rate scheduling.")
     parser.add_argument("--warmup", type=bool, default=True, help="Warmup flag for the model.")
-    parser.add_argument("--flow_path", type=str, default="flow_outputs", help="Path to save the optical flow outputs.")
+    parser.add_argument("--flow_path", type=str, default="flow_outputs_dehaze", help="Path to save the optical flow outputs.")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for the data loader.")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader.")
     parser.add_argument("--max_epochs", type=int, default=100, help="Maximum number of epochs for training.")

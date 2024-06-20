@@ -34,10 +34,12 @@ class FlowSimilarityLoss(nn.Module):
         
         # their product will be b,i,c,h,w we need to get rid of the i in order to feed to the VGG
         # therefore put that dimension into the batch as well
+        
+
         production = frgb * m
         neg_production = frgb * (1-m)
         VGG.to(m.device)
-        product = VGG(production.view(b*i, c,h,w))
-        neg_product = VGG(neg_production.view(b*i, c,h,w))
+        product = VGG(production)
+        neg_product = VGG(neg_production)
         lfsim = (product * neg_product) / (torch.norm(product) * torch.norm(neg_product))
         return lfsim

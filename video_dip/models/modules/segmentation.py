@@ -4,7 +4,10 @@ from . import VDPModule
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from video_dip.losses import FlowSimilarityLoss, MaskLoss, ReconstructionLayerLoss
 from video_dip.models.unet import UNet
-
+import torch.nn as nn
+from torchmetrics.classification import BinaryJaccardIndex
+from torchvision.transforms.functional import rgb_to_grayscale
+from video_dip.models.optical_flow.raft import RAFT, RAFTModelSize
 
 class SegmentationVDPModule(VDPModule):
     """
@@ -23,20 +26,19 @@ class SegmentationVDPModule(VDPModule):
         #λwarp = 0.01 and λMask = 0.01.
 
 
-    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1, 1, .001, .01]):
-        super().__init__(learning_rate, loss_weights)
+    def __init__(self, learning_rate=1e-3, loss_weights=[.001, 1 , 1, .01, .01], **kwargs):
+        super().__init__(learning_rate, loss_weights, **kwargs)
 
 
         # one additional rgb net
         self.rgb_net2 = UNet(out_channels=3)  # RGB-Net with 3 input and 3 output channels
 
-        self.ssim = StructuralSimilarityIndexMeasure(data_range=1.0)
-        self.psnr = PeakSignalNoiseRatio(data_range=1.0)
-
-
         self.flow_similarity_loss = FlowSimilarityLoss()
         self.rec_layer_loss = ReconstructionLayerLoss()
         self.mask_loss = MaskLoss()
+
+
+        self.iou_metric = BinaryJaccardIndex(threshold=0.5)
 
         self.save_hyperparameters()
 
@@ -52,11 +54,17 @@ class SegmentationVDPModule(VDPModule):
         Returns:
             torch.Tensor: The reconstructed output tensor.
         """
+        # bloew part is only for L>2
         # rescale Mi's so that after addition of all masks they sum up to one (falpha)
-        summed_masks = torch.sum(alpha_output, dim = 1)
-        summed_masks = torch.unsqueeze(summed_masks, 1)
+        # summed_masks = torch.sum(alpha_output, dim = 1)
+        # summed_masks = torch.unsqueeze(summed_masks, 1)
 
-        alpha_output = alpha_output / summed_masks
+        # alpha_output = alpha_output / summed_masks
+
+        # remap alpha output values to 1 and 0's
+
+        # alpha_copy = torch.ones(alpha_output.shape, device = alpha_output.device)        
+        # alpha_copy[alpha_output <= 0.5] = 0
 
 
         return alpha_output * rgb_output1 + (1 - alpha_output) * rgb_output2
@@ -84,7 +92,6 @@ class SegmentationVDPModule(VDPModule):
     def inference(self, batch, batch_idx):
         input_frames = batch['input']
         flows = batch['flow']
-
         flow_frames = torchvision.utils.flow_to_image(flows) / 255.0
 
         output = self(img=input_frames, flow=flow_frames)
@@ -97,6 +104,7 @@ class SegmentationVDPModule(VDPModule):
         return {
             "input": input_frames,
             "flow": flows,
+            "flow_rgb": flow_frames,
             "reconstructed": reconstructed_frame,
             "rgb_output": rgb_output,
             "rgb_output2": rgb_output2,
@@ -107,18 +115,19 @@ class SegmentationVDPModule(VDPModule):
 
     def training_step(self, batch, batch_idx):
         outputs = self.inference(batch, batch_idx)
+        
         flow_estimate = torchvision.utils.flow_to_image(batch['prev_flow']) / 255.0
-        prev_alpha_output = self(flow=flow_estimate)['alpha']
+        prev_output = self(img=batch['prev_input'])['rgb'].detach()
 
         x = batch["input"]
         x_hat = outputs["reconstructed"]
 
 
 
-        flow_sim_loss = self.flow_similarity_loss(m = prev_alpha_output, frgb = flow_estimate)
+        flow_sim_loss = self.flow_similarity_loss(m = outputs['alpha_output'], frgb = flow_estimate)
         rec_loss = self.reconstruction_loss(x = x, x_hat = x_hat)
         rec_layer_loss = self.rec_layer_loss(m = flow_estimate, x = x, x_hat = x_hat)
-        warp_loss = self.warp_loss(outputs['flow'], prev_alpha_output, outputs['alpha_output'])
+        warp_loss = self.warp_loss(outputs['flow'], prev_output, outputs['alpha_output'])
         mask_loss = self.mask_loss(outputs['alpha_output'])
 
 
@@ -130,18 +139,15 @@ class SegmentationVDPModule(VDPModule):
 
 
 
-        flow_sim_loss =self.loss_weights[0] * torch.mean( flow_sim_loss)
-        rec_loss = self.loss_weights[1] * torch.mean( rec_loss)
-        rec_layer_loss = self.loss_weights[2] * torch.mean( rec_layer_loss)
-        warp_loss = self.loss_weights[3] * torch.mean( warp_loss)
-        mask_loss = self.loss_weights[4] * torch.mean( mask_loss)
+        flow_sim_loss =self.loss_weights[0] * torch.sum( flow_sim_loss)
+        rec_loss = self.loss_weights[1] * torch.sum( rec_loss)
+        rec_layer_loss = self.loss_weights[2] * torch.sum( rec_layer_loss)
+        warp_loss = self.loss_weights[3] * torch.sum( warp_loss)
+        mask_loss = self.loss_weights[4] * torch.sum( mask_loss)
 
 
-        loss = flow_sim_loss
-        + rec_loss
-        + rec_layer_loss
-        + warp_loss
-        + mask_loss
+        loss = flow_sim_loss + rec_loss + rec_layer_loss + warp_loss + mask_loss
+
         
 
 
@@ -161,16 +167,19 @@ class SegmentationVDPModule(VDPModule):
     def validation_step(self, batch, batch_idx):
         outputs = self.inference(batch, batch_idx)
 
-        # rgb_output = outputs['rgb_output']
-        # gt = batch['target']
-
-        # # Compute PSNR and SSIM
-        # self.psnr(rgb_output, gt)
-        # self.ssim(rgb_output, gt)
-
-        self.log('a', 1, on_step=False, on_epoch=True, prog_bar=True)
-        # self.log('ssim', self.ssim, on_step=False, on_epoch=True, prog_bar=True)
-        # self.log('gamma_inv', self.gamma_inv, on_step=False, on_epoch=True, prog_bar=True)
-
+        # binarize segmentation groundtruth
+        gray_gt = rgb_to_grayscale(batch["target"])
+        gray_gt[gray_gt <= 0.5] = 0
+        gray_gt[gray_gt > 0.5] = 1
+        iou_score = self.iou_metric(outputs["alpha_output"], gray_gt)
+        self.log('iou_score', iou_score, on_step=False, on_epoch=True, prog_bar=True)
+        
+        
+        treshold = 0.5
+        outputs["segmentation"] = torch.ones(outputs["alpha_output"].shape)
+        outputs["segmentation"][outputs["alpha_output"] <= treshold] = 0
+        
+        outputs["segmentation_gt"] = gray_gt
+        
         return outputs
     

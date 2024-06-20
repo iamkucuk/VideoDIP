@@ -34,14 +34,14 @@ class ReconstructionLayerLoss(nn.Module):
         
         second_dim = i*c
 
-        m = m.repeat(1,c,1,1)
-        x = x.repeat(1,i,1,1)
-        x_hat = x_hat.repeat(1,i,1,1)
+        m_repeated = m.repeat(1,c,1,1)
+        x_repeated = x.repeat(1,i,1,1)
+        x_hat_repeated = x_hat.repeat(1,i,1,1)
 
         # their product will be b,i,c,h,w we need to get rid of the i in order to feed to the VGG
         # therefore put that dimension into the batch as well
-        production = x * m
-        pred_production = x_hat * m
+        production = x_repeated * m_repeated
+        pred_production = x_hat_repeated * m_repeated
 
         layer_loss = self.l1_loss(production, pred_production)
         

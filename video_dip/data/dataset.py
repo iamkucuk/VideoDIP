@@ -168,13 +168,14 @@ class VideoDIPDataset(Dataset):
     def __len__(self):
         if self.optical_flow_frames is None:
             return len(self.input_frames)
-        return len(self.input_frames) - 1 # Omit the first two frames
+        return len(self.input_frames) - 2 # Omit the first two frames
     
     def __getitem__(self, idx):
         datum = {}
         if self.optical_flow_frames is not None:
-            idx += 1 # Skip the first frame
-            datum['flow'] = self.transforms(np.load(self.optical_flow_frames[idx - 1]))
+            idx += 2 # Skip the first frame
+            datum['flow'] = self.transforms(np.load(self.optical_flow_frames[idx - 1]))  
+            datum['prev_flow'] = self.transforms(np.load(self.optical_flow_frames[idx - 2]))  
 
         datum.update({
             "input": self.transforms(self._load_image(self.input_frames[idx])), 
